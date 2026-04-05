@@ -1,100 +1,96 @@
 package com.university.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.Customizer;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 
-/**
- * Security configuration for the application
- * Defines access rules for different endpoints and user roles
- */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    /**
-     * Configure security filter chain
-     */
+    private final JwtAuthenticationFilter jwtAuthFilter;
+    private final UserDetailsServiceImpl userDetailsService;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .cors(Customizer.withDefaults())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
-                // H2 Console - for development only
-                .requestMatchers("/h2-console/**").permitAll()
+                // Swagger UI / OpenAPI docs (public)
+                .requestMatchers(
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html"
+                ).permitAll()
+
+                // Public auth endpoints
+                .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
+
+                // Admin-only user management
+                .requestMatchers("/auth/users/**").hasRole("ADMIN")
+
+                // Authenticated user profile
                 .requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
 
-                // Read-only access for authenticated USER and ADMIN
-                .requestMatchers(HttpMethod.GET, "/resources/**").hasAnyRole("USER", "ADMIN")
-
-                // Write access only for ADMIN
+                // Resources: read for any authenticated user, write for admin only
+                .requestMatchers(HttpMethod.GET, "/resources/**").hasAnyRole("ADMIN", "TECHNICIAN", "USER")
                 .requestMatchers(HttpMethod.POST, "/resources/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/resources/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/resources/**").hasRole("ADMIN")
-                .requestMatchers("/resources/**").hasRole("ADMIN")
-                
+
+                // Notifications for authenticated users
+                .requestMatchers("/notifications/**").authenticated()
+
                 // All other requests require authentication
                 .anyRequest().authenticated()
             )
-            .httpBasic(basic -> {})
-            .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable())); // For H2 Console
+            .authenticationProvider(authenticationProvider())
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    /**
-     * In-memory user details for MongoDB-based authentication
-     * Users are defined at startup (not persisted across restarts)
-     */
     @Bean
-    public UserDetailsManager userDetailsService() {
-        InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
-
-        UserDetails adminUser = User.builder()
-            .username("admin")
-            .password(passwordEncoder().encode("admin123"))
-            .roles("ADMIN", "USER")
-            .build();
-        manager.createUser(adminUser);
-
-        UserDetails normalUser = User.builder()
-            .username("user")
-            .password(passwordEncoder().encode("user123"))
-            .roles("USER")
-            .build();
-        manager.createUser(normalUser);
-
-        return manager;
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
     }
 
-    /**
-     * Password encoder bean
-     */
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * Configure CORS to allow React frontend to communicate with backend
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -103,7 +99,7 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
