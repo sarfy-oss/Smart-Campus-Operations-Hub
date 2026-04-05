@@ -498,7 +498,7 @@ const ResourceList = () => {
           <button type="button" className="rm-nav-item">
             <span>◌</span> Issues
           </button>
-          <button type="button" className="rm-nav-item">
+          <button type="button" className="rm-nav-item" onClick={() => navigate('/users')}>
             <span>◉</span> Users
           </button>
         </nav>

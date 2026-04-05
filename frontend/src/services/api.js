@@ -1,10 +1,8 @@
 import axios from 'axios';
 
-// Base configuration for API calls
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
 const AUTH_STORAGE_KEY = 'auth_profile';
 
-// Create Axios instance with base configuration
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
@@ -13,52 +11,19 @@ const apiClient = axios.create({
   },
 });
 
-// Add request interceptor to include authentication if needed
+// Inject JWT Bearer token on every request
 apiClient.interceptors.request.use(
   (config) => {
-    // Add credentials if stored in localStorage
-    const authProfileRaw = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (authProfileRaw) {
-      const profile = JSON.parse(authProfileRaw);
-      const username = profile?.username;
-      const password = profile?.password;
-
-      if (username && password) {
-        config.auth = {
-          username,
-          password,
-        };
-      }
+    const profile = getAuthProfile();
+    if (profile?.token) {
+      config.headers['Authorization'] = `Bearer ${profile.token}`;
     }
-
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-const clearAuthProfile = () => {
-  localStorage.removeItem(AUTH_STORAGE_KEY);
-};
-
-const saveAuthProfile = (profile) => {
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(profile));
-};
-
-const getAuthProfile = () => {
-  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw);
-  } catch (_e) {
-    clearAuthProfile();
-    return null;
-  }
-};
-
-// Add response interceptor to handle errors globally
+// Redirect to login on 401
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -72,163 +37,108 @@ apiClient.interceptors.response.use(
   }
 );
 
-/**
- * Resource API Service
- * Contains all API calls for resource management
- */
-export const resourceAPI = {
-  /**
-   * Get all resources with pagination
-   */
-  getAllResources: (page = 0, size = 10, sort = 'id,desc') => {
-    return apiClient.get('/resources', {
-      params: { page, size, sort },
-    });
-  },
+const clearAuthProfile = () => localStorage.removeItem(AUTH_STORAGE_KEY);
 
-  /**
-   * Get single resource by ID
-   */
-  getResourceById: (id) => {
-    return apiClient.get(`/resources/${id}`);
-  },
+const saveAuthProfile = (profile) =>
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(profile));
 
-  /**
-   * Create new resource
-   */
-  createResource: (resourceData) => {
-    return apiClient.post('/resources', resourceData);
-  },
-
-  /**
-   * Update existing resource
-   */
-  updateResource: (id, resourceData) => {
-    return apiClient.put(`/resources/${id}`, resourceData);
-  },
-
-  /**
-   * Delete resource
-   */
-  deleteResource: (id) => {
-    return apiClient.delete(`/resources/${id}`);
-  },
-
-  /**
-   * Search resources by keyword
-   */
-  searchResources: (keyword, page = 0, size = 10) => {
-    return apiClient.get('/resources/search/keyword', {
-      params: { keyword, page, size },
-    });
-  },
-
-  /**
-   * Filter resources by type
-   */
-  filterByType: (type, page = 0, size = 10) => {
-    return apiClient.get('/resources/filter/type', {
-      params: { type, page, size },
-    });
-  },
-
-  /**
-   * Filter resources by status
-   */
-  filterByStatus: (status, page = 0, size = 10) => {
-    return apiClient.get('/resources/filter/status', {
-      params: { status, page, size },
-    });
-  },
-
-  /**
-   * Filter resources by location
-   */
-  filterByLocation: (location, page = 0, size = 10) => {
-    return apiClient.get('/resources/filter/location', {
-      params: { location, page, size },
-    });
-  },
-
-  /**
-   * Filter resources by capacity
-   */
-  filterByCapacity: (capacity, page = 0, size = 10) => {
-    return apiClient.get('/resources/filter/capacity', {
-      params: { capacity, page, size },
-    });
-  },
-
-  /**
-   * Filter resources by type and capacity
-   */
-  filterByTypeAndCapacity: (type, capacity, page = 0, size = 10) => {
-    return apiClient.get('/resources/filter/type-capacity', {
-      params: { type, capacity, page, size },
-    });
-  },
-
-  /**
-   * Get available resources
-   */
-  getAvailableResources: () => {
-    return apiClient.get('/resources/available/list');
-  },
+const getAuthProfile = () => {
+  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    clearAuthProfile();
+    return null;
+  }
 };
 
 /**
- * Authentication service
+ * Resource API Service
+ */
+export const resourceAPI = {
+  getAllResources: (page = 0, size = 10, sort = 'id,desc') =>
+    apiClient.get('/resources', { params: { page, size, sort } }),
+
+  getResourceById: (id) => apiClient.get(`/resources/${id}`),
+
+  createResource: (resourceData) => apiClient.post('/resources', resourceData),
+
+  updateResource: (id, resourceData) => apiClient.put(`/resources/${id}`, resourceData),
+
+  deleteResource: (id) => apiClient.delete(`/resources/${id}`),
+
+  searchResources: (keyword, page = 0, size = 10) =>
+    apiClient.get('/resources/search/keyword', { params: { keyword, page, size } }),
+
+  filterByType: (type, page = 0, size = 10) =>
+    apiClient.get('/resources/filter/type', { params: { type, page, size } }),
+
+  filterByStatus: (status, page = 0, size = 10) =>
+    apiClient.get('/resources/filter/status', { params: { status, page, size } }),
+
+  filterByLocation: (location, page = 0, size = 10) =>
+    apiClient.get('/resources/filter/location', { params: { location, page, size } }),
+
+  filterByCapacity: (capacity, page = 0, size = 10) =>
+    apiClient.get('/resources/filter/capacity', { params: { capacity, page, size } }),
+
+  filterByTypeAndCapacity: (type, capacity, page = 0, size = 10) =>
+    apiClient.get('/resources/filter/type-capacity', { params: { type, capacity, page, size } }),
+
+  getAvailableResources: () => apiClient.get('/resources/available/list'),
+};
+
+/**
+ * Authentication API Service
  */
 export const authAPI = {
-  /**
-   * Register new user account (USER role)
-   */
-  register: (username, password) => {
-    return apiClient.post('/auth/register', { username, password });
-  },
-
-  /**
-   * Login using Basic auth and store profile
-   */
   login: async (username, password) => {
-    const response = await apiClient.get('/auth/me', {
-      auth: { username, password },
-      headers: {
-        'X-Auth-Check': 'login',
-      },
-    });
-
-    const roles = response.data?.roles || [];
-    saveAuthProfile({ username, password, roles });
-
+    const response = await apiClient.post('/auth/login', { username, password });
+    const { token, username: uname, role } = response.data;
+    saveAuthProfile({ token, username: uname, role });
     return response.data;
   },
 
-  /**
-   * Clear credentials
-   */
-  logout: () => {
-    clearAuthProfile();
-  },
+  register: (username, password) =>
+    apiClient.post('/auth/register', { username, password }),
 
-  /**
-   * Check if user is authenticated
-   */
-  isAuthenticated: () => {
-    const profile = getAuthProfile();
-    return !!(profile?.username && profile?.password);
-  },
+  logout: () => clearAuthProfile(),
+
+  isAuthenticated: () => !!getAuthProfile()?.token,
 
   getProfile: () => getAuthProfile(),
 
   hasRole: (role) => {
-    const profile = getAuthProfile();
-    return !!profile?.roles?.includes(role);
+    const p = getAuthProfile();
+    return p?.role === role || (Array.isArray(p?.roles) && p.roles.includes(role));
   },
 
-  isAdmin: () => {
-    return authAPI.hasRole('ADMIN');
-  },
+  isAdmin: () => authAPI.hasRole('ADMIN'),
+
+  // User management (admin only)
+  getUsers: () => apiClient.get('/auth/users'),
+
+  createUser: (data) => apiClient.post('/auth/users', data),
+
+  updateUser: (id, data) => apiClient.put(`/auth/users/${id}`, data),
+
+  deleteUser: (id) => apiClient.delete(`/auth/users/${id}`),
+};
+
+/**
+ * Notification API Service
+ */
+export const notificationAPI = {
+  getAll: () => apiClient.get('/notifications'),
+
+  markRead: (id) => apiClient.put(`/notifications/${id}/read`),
+
+  markAllRead: () => apiClient.put('/notifications/read-all'),
+
+  create: (notification) => apiClient.post('/notifications', notification),
+
+  delete: (id) => apiClient.delete(`/notifications/${id}`),
 };
 
 export default apiClient;
