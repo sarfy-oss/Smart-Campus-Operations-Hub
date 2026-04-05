@@ -487,9 +487,8 @@ const Login = () => {
     setLoading(true);
     try {
       const profile = await authAPI.login(loginId, formData.password);
-      const rolesText = (profile.roles || []).join(', ');
-      toast.success(`Logged in successfully (${rolesText})`);
-      navigate('/resources');
+      toast.success(`Logged in as ${profile.username} (${profile.role})`);
+      navigate(profile.role === 'ADMIN' ? '/dashboard' : '/resources');
     } catch (err) {
       if (!err.response) {
         setError('Cannot connect to backend. Make sure API is running on http://localhost:8080.');

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Form, Modal, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import OperationsSidebar from '../components/OperationsSidebar';
 import { authAPI, resourceAPI } from '../services/api';
 import { useNotifications } from '../context/NotificationContext';
 import BrandLogo from '../components/BrandLogo';
@@ -480,7 +481,8 @@ const ResourceList = () => {
   return (
     <div className="rm-page">
       <style>{resourceListStyles}</style>
-      <aside className="rm-sidebar">
+      <OperationsSidebar activeKey="resources" />
+      <aside className="rm-sidebar" style={{ display: 'none' }}>
         <div className="rm-brand">
           <BrandLogo />
         </div>

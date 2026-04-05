@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { Form, Button, Spinner, Alert } from 'react-bootstrap';
 import { useNavigate, useParams } from 'react-router-dom';
+import OperationsSidebar from './OperationsSidebar';
 import { authAPI, resourceAPI } from '../services/api';
 import { validateResource } from '../utils/helpers';
 import { useNotifications } from '../context/NotificationContext';
@@ -464,7 +465,8 @@ const ResourceForm = () => {
   return (
     <div className="rf-page">
       <style>{resourceFormStyles}</style>
-      <aside className="rf-sidebar">
+      <OperationsSidebar activeKey="resources" />
+      <aside className="rf-sidebar" style={{ display: 'none' }}>
         <div className="rf-brand">
           <BrandLogo />
         </div>

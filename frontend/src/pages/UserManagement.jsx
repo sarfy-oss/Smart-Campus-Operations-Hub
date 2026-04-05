@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Modal, Form, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import OperationsSidebar from '../components/OperationsSidebar';
 import { authAPI } from '../services/api';
 import BrandLogo from '../components/BrandLogo';
 
@@ -382,9 +383,10 @@ const UserManagement = () => {
   return (
     <div className="um-page">
       <style>{styles}</style>
+      <OperationsSidebar activeKey="users" />
 
       {/* ── Sidebar ── */}
-      <aside className="um-sidebar">
+      <aside className="um-sidebar" style={{ display: 'none' }}>
         <div className="um-brand">
           <BrandLogo />
         </div>

@@ -5,6 +5,7 @@ import {
   Button,
 } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
+import OperationsSidebar from '../components/OperationsSidebar';
 import { authAPI, resourceAPI } from '../services/api';
 import { formatDate, getEnumDisplay } from '../utils/helpers';
 import BrandLogo from '../components/BrandLogo';
@@ -540,7 +541,8 @@ const ResourceDetails = () => {
   return (
     <div className="rm-page">
       <style>{resourceDetailsStyles}</style>
-      <aside className="rm-sidebar">
+      <OperationsSidebar activeKey="resources" />
+      <aside className="rm-sidebar" style={{ display: 'none' }}>
         <div className="rm-brand">
           <BrandLogo />
         </div>
