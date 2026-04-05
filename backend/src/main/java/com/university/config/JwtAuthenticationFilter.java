@@ -27,12 +27,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (authHeader == null || !authHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        final String jwt = authHeader.substring(7);
+        final String jwt = extractBearerToken(authHeader);
+        if (jwt == null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         final String username;
 
         try {
@@ -54,5 +58,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private String extractBearerToken(String authHeader) {
+        String token = authHeader.trim();
+
+        // Swagger's HTTP bearer auth can prepend "Bearer " automatically, so
+        // tolerate users pasting "Bearer <token>" into the authorize dialog.
+        while (token.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            token = token.substring(7).trim();
+        }
+
+        return token.isEmpty() ? null : token;
     }
 }

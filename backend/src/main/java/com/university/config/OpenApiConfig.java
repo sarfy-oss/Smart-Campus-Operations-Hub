@@ -23,7 +23,7 @@ public class OpenApiConfig {
                                      "**How to authenticate:**\n" +
                                      "1. Use `POST /auth/login` with `{ \"username\": \"admin\", \"password\": \"admin123\" }`\n" +
                                      "2. Copy the `token` from the response\n" +
-                                     "3. Click **Authorize** above and enter: `Bearer <token>`")
+                                     "3. Click **Authorize** above and paste only the raw JWT token (do not add `Bearer `; Swagger adds it automatically)")
                         .version("1.0.0")
                         .contact(new Contact()
                                 .name("Smart Campus Team")
@@ -35,6 +35,6 @@ public class OpenApiConfig {
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
                                 .bearerFormat("JWT")
-                                .description("Enter your JWT token. Obtain it from POST /auth/login")));
+                                .description("Enter only the raw JWT token from POST /auth/login. Do not prefix it with `Bearer `.")));
     }
 }
