@@ -231,4 +231,27 @@ export const authAPI = {
   },
 };
 
+/**
+ * Booking API Service
+ */
+export const bookingAPI = {
+  createBooking: (data) => apiClient.post('/bookings', data),
+
+  getMyBookings: (page = 0, size = 10) =>
+    apiClient.get('/bookings/my', { params: { page, size } }),
+
+  getAllBookings: (page = 0, size = 10, status = null) =>
+    apiClient.get('/bookings', { params: { page, size, ...(status && { status }) } }),
+
+  getBookingById: (id) => apiClient.get(`/bookings/${id}`),
+
+  updateBooking: (id, data) => apiClient.put(`/bookings/${id}`, data),
+
+  updateBookingStatus: (id, data) => apiClient.put(`/bookings/${id}/status`, data),
+
+  cancelBooking: (id) => apiClient.put(`/bookings/${id}/cancel`),
+
+  deleteBooking: (id) => apiClient.delete(`/bookings/${id}`),
+};
+
 export default apiClient;

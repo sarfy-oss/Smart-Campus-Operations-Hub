@@ -492,7 +492,7 @@ const ResourceList = () => {
           <button type="button" className="rm-nav-item rm-nav-item-active">
             <span>▣</span> Resources
           </button>
-          <button type="button" className="rm-nav-item">
+          <button type="button" className="rm-nav-item" onClick={() => navigate('/bookings')}>
             <span>▤</span> Bookings
           </button>
           <button type="button" className="rm-nav-item">
