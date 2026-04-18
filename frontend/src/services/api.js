@@ -2,6 +2,11 @@ import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
 const AUTH_STORAGE_KEY = 'auth_profile';
+const LEGACY_TOKEN_KEY = 'token';
+const LEGACY_USER_KEY = 'user';
+const AUTH_DEBUG_ENABLED =
+  process.env.NODE_ENV !== 'production' &&
+  process.env.REACT_APP_AUTH_DEBUG === 'true';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -37,10 +42,27 @@ apiClient.interceptors.response.use(
   }
 );
 
-const clearAuthProfile = () => localStorage.removeItem(AUTH_STORAGE_KEY);
+const clearAuthProfile = () => {
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+  localStorage.removeItem(LEGACY_TOKEN_KEY);
+  localStorage.removeItem(LEGACY_USER_KEY);
+};
 
-const saveAuthProfile = (profile) =>
+const saveAuthProfile = (profile) => {
   localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(profile));
+
+  // Keep legacy keys for any older guards/components that still read them directly.
+  if (profile?.token) {
+    localStorage.setItem(LEGACY_TOKEN_KEY, profile.token);
+  }
+  localStorage.setItem(
+    LEGACY_USER_KEY,
+    JSON.stringify({
+      username: profile?.username || '',
+      role: profile?.role || '',
+    })
+  );
+};
 
 const getAuthProfile = () => {
   const raw = localStorage.getItem(AUTH_STORAGE_KEY);
@@ -96,7 +118,28 @@ export const authAPI = {
   login: async (username, password) => {
     const response = await apiClient.post('/auth/login', { username, password });
     const { token, username: uname, role } = response.data;
+    if (!token) {
+      throw new Error('Backend login response did not include a token');
+    }
     saveAuthProfile({ token, username: uname, role });
+    return response.data;
+  },
+
+  loginWithGoogle: async (token) => {
+    if (!token) {
+      throw new Error('Google credential token is missing');
+    }
+    const response = await apiClient.post('/auth/student/google', { token });
+    const { token: appToken, username: uname, role } = response.data;
+    if (!appToken) {
+      throw new Error('Backend Google login response did not include a token');
+    }
+    saveAuthProfile({ token: appToken, username: uname, role });
+    if (AUTH_DEBUG_ENABLED) {
+      // Debug only: helps confirm storage + response shape after Google auth.
+      // eslint-disable-next-line no-console
+      console.log('[auth] Google login success', { username: uname, role });
+    }
     return response.data;
   },
 
