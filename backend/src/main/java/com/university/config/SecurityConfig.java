@@ -50,6 +50,7 @@ public class SecurityConfig {
                 // Public auth endpoints
                 .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
+                .requestMatchers(HttpMethod.POST, "/auth/student/google").permitAll()
 
                 // Admin-only user management
                 .requestMatchers("/auth/users/**").hasRole("ADMIN")

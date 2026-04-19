@@ -3,6 +3,7 @@ package com.university.controller;
 import com.university.config.JwtUtil;
 import com.university.config.UserDetailsServiceImpl;
 import com.university.dto.CreateUserDTO;
+import com.university.dto.GoogleAuthRequest;
 import com.university.dto.LoginRequestDTO;
 import com.university.dto.LoginResponseDTO;
 import com.university.dto.RegisterRequestDTO;
@@ -10,6 +11,7 @@ import com.university.dto.UserResponseDTO;
 import com.university.entity.Role;
 import com.university.entity.User;
 import com.university.repository.UserRepository;
+import com.university.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -30,6 +32,12 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@CrossOrigin(originPatterns = {
+        "http://localhost:*",
+        "http://127.0.0.1:*",
+        "https://localhost:*",
+        "https://127.0.0.1:*"
+})
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -37,6 +45,7 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthService authService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO request) {
@@ -77,6 +86,11 @@ public class AuthController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(Map.of("message", "Account created successfully"));
+    }
+
+    @PostMapping("/student/google")
+    public ResponseEntity<LoginResponseDTO> loginStudentWithGoogle(@Valid @RequestBody GoogleAuthRequest request) {
+        return ResponseEntity.ok(authService.loginStudentWithGoogle(request.getToken()));
     }
 
     @GetMapping("/me")
