@@ -33,10 +33,16 @@ import java.util.stream.Collectors;
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 @CrossOrigin(originPatterns = {
+        "http://localhost",
         "http://localhost:*",
+        "http://[::1]",
+        "http://[::1]:*",
         "http://127.0.0.1:*",
+        "https://localhost",
         "https://localhost:*",
-        "https://127.0.0.1:*"
+        "https://127.0.0.1:*",
+        "https://[::1]",
+        "https://[::1]:*"
 })
 public class AuthController {
 

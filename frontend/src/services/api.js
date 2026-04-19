@@ -5,7 +5,7 @@ const AUTH_STORAGE_KEY = 'auth_profile';
 const LEGACY_TOKEN_KEY = 'token';
 const LEGACY_USER_KEY = 'user';
 const AUTH_DEBUG_ENABLED =
-  process.env.NODE_ENV !== 'production' &&
+  process.env.NODE_ENV !== 'production' ||
   process.env.REACT_APP_AUTH_DEBUG === 'true';
 
 const apiClient = axios.create({
@@ -16,9 +16,32 @@ const apiClient = axios.create({
   },
 });
 
+const PUBLIC_AUTH_PATHS = new Set([
+  '/auth/login',
+  '/auth/register',
+  '/auth/student/google',
+]);
+
+const isPublicAuthRequest = (url) => {
+  if (!url) return false;
+
+  // Handles both relative paths ('/auth/login') and absolute URLs.
+  const normalizedUrl = String(url);
+  for (const path of PUBLIC_AUTH_PATHS) {
+    if (normalizedUrl === path || normalizedUrl.endsWith(path)) {
+      return true;
+    }
+  }
+  return false;
+};
+
 // Inject JWT Bearer token on every request
 apiClient.interceptors.request.use(
   (config) => {
+    if (isPublicAuthRequest(config?.url)) {
+      return config;
+    }
+
     const profile = getAuthProfile();
     if (profile?.token) {
       config.headers['Authorization'] = `Bearer ${profile.token}`;
@@ -129,6 +152,13 @@ export const authAPI = {
     if (!token) {
       throw new Error('Google credential token is missing');
     }
+    if (AUTH_DEBUG_ENABLED) {
+      // eslint-disable-next-line no-console
+      console.log('[auth] sending Google token to backend', {
+        endpoint: `${API_BASE_URL}/auth/student/google`,
+        tokenLength: token.length,
+      });
+    }
     const response = await apiClient.post('/auth/student/google', { token });
     const { token: appToken, username: uname, role } = response.data;
     if (!appToken) {
@@ -138,7 +168,12 @@ export const authAPI = {
     if (AUTH_DEBUG_ENABLED) {
       // Debug only: helps confirm storage + response shape after Google auth.
       // eslint-disable-next-line no-console
-      console.log('[auth] Google login success', { username: uname, role });
+      console.log('[auth] Google login success', {
+        status: response.status,
+        username: uname,
+        role,
+        savedProfile: getAuthProfile(),
+      });
     }
     return response.data;
   },

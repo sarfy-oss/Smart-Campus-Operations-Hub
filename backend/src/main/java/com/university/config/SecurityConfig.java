@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                 .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/auth/student/google").permitAll()
+                .requestMatchers("/auth/login", "/auth/register", "/auth/student/google", "/auth/student/google/**").permitAll()
 
                 // Admin-only user management
                 .requestMatchers("/auth/users/**").hasRole("ADMIN")
@@ -98,10 +99,16 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost",
                 "http://localhost:*",
+                "http://[::1]",
+                "http://[::1]:*",
                 "http://127.0.0.1:*",
+                "https://localhost",
                 "https://localhost:*",
-                "https://127.0.0.1:*"
+                "https://127.0.0.1:*",
+                "https://[::1]",
+                "https://[::1]:*"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));

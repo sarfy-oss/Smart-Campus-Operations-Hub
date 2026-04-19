@@ -8,7 +8,7 @@ import GoogleSignInButton from '../components/GoogleSignInButton';
 //   process.NODE_ENV !== 'production' &&
 //   process.REACT_APP_AUTH_DEBUG === 'true';
 const AUTH_DEBUG_ENABLED =
-  process.env.NODE_ENV !== 'production' &&
+  process.env.NODE_ENV !== 'production' ||
   process.env.REACT_APP_AUTH_DEBUG === 'true';
 
 const loginStyles = String.raw`
@@ -588,7 +588,11 @@ const Login = () => {
     } catch (err) {
       if (AUTH_DEBUG_ENABLED) {
         // eslint-disable-next-line no-console
-        console.error('[google] login flow failed', err);
+        console.error('[google] login flow failed', {
+          message: err?.message,
+          status: err?.response?.status,
+          data: err?.response?.data,
+        });
       }
 
       if (!err.response && err.message) {

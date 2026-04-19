@@ -35,9 +35,6 @@ import java.util.UUID;
 @Transactional
 public class AuthService {
 
-    private static final String ALLOWED_HOSTED_DOMAIN = "my.sliit.lk";
-    private static final String DOMAIN_ERROR_MESSAGE = "Only @my.sliit.lk Google accounts are allowed";
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserDetailsServiceImpl userDetailsService;
@@ -46,31 +43,24 @@ public class AuthService {
     @Value("${google.client.id}")
     private String googleClientId;
 
-    @Value("${google.restrict-sliit-domain:false}")
-    private boolean restrictSliitDomain;
-
     public LoginResponseDTO loginStudentWithGoogle(String token) {
         GoogleIdToken.Payload payload = verifyGoogleToken(token);
 
         String email = extractNormalizedEmail(payload);
         String hostedDomain = payload.getHostedDomain();
 
-        if (restrictSliitDomain) {
-            if (!ALLOWED_HOSTED_DOMAIN.equalsIgnoreCase(hostedDomain)) {
-                log.warn("Google auth rejected due hosted domain. email={}, hostedDomain={}", email, hostedDomain);
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, DOMAIN_ERROR_MESSAGE);
-            }
-
-            if (!email.endsWith("@" + ALLOWED_HOSTED_DOMAIN)) {
-                log.warn("Google auth rejected due email suffix. email={}", email);
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, DOMAIN_ERROR_MESSAGE);
-            }
-        }
+        log.info(
+                "Google login attempt: email={}, hostedDomain={}",
+                email,
+                hostedDomain
+        );
 
         User user = findOrCreateGoogleStudent(email);
         if (!user.isEnabled()) {
-            log.warn("Google auth rejected because account is disabled. username={}", user.getUsername());
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your account is disabled");
+            // Temporary behavior: re-enable disabled users when they prove ownership via Google.
+            log.warn("Re-enabling disabled account during Google auth. username={}", user.getUsername());
+            user.setEnabled(true);
+            user = userRepository.save(user);
         }
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
@@ -121,6 +111,12 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Google token is required");
         }
 
+        log.info(
+                "Verifying Google ID token. configuredAudience={}, tokenLength={}",
+                googleClientId,
+                idTokenString.length()
+        );
+
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
                 new NetHttpTransport(),
                 GsonFactory.getDefaultInstance()
@@ -134,6 +130,7 @@ public class AuthService {
             if (idToken == null) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Google token");
             }
+            log.info("Google ID token verified successfully for audience={}", googleClientId);
             return idToken.getPayload();
         } catch (GeneralSecurityException | IOException ex) {
             log.warn("Google token verification failed: {}", ex.getMessage());
