@@ -4,6 +4,9 @@ import { toast } from 'react-toastify';
 import { authAPI } from '../services/api';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 
+// const AUTH_DEBUG_ENABLED =
+//   process.NODE_ENV !== 'production' &&
+//   process.REACT_APP_AUTH_DEBUG === 'true';
 const AUTH_DEBUG_ENABLED =
   process.env.NODE_ENV !== 'production' &&
   process.env.REACT_APP_AUTH_DEBUG === 'true';
