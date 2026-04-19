@@ -8,7 +8,6 @@ import com.university.dto.LoginRequestDTO;
 import com.university.dto.LoginResponseDTO;
 import com.university.dto.RegisterRequestDTO;
 import com.university.dto.UserResponseDTO;
-import com.university.entity.Role;
 import com.university.entity.User;
 import com.university.repository.UserRepository;
 import com.university.service.AuthService;
@@ -26,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -68,7 +68,7 @@ public class AuthController {
         String token = jwtUtil.generateToken(userDetails);
 
         User user = userRepository.findByUsername(request.getUsername()).orElseThrow();
-        return ResponseEntity.ok(new LoginResponseDTO(token, user.getUsername(), user.getRole().name()));
+        return ResponseEntity.ok(new LoginResponseDTO(token, user.getUsername(), user.getRole()));
     }
 
     @PostMapping("/register")
@@ -83,7 +83,7 @@ public class AuthController {
         User user = User.builder()
                 .username(normalizedUsername)
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.USER)
+                .role("USER")
                 .enabled(true)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -104,7 +104,7 @@ public class AuthController {
         User user = userRepository.findByUsername(authentication.getName()).orElseThrow();
         return ResponseEntity.ok(Map.of(
                 "username", user.getUsername(),
-                "role", user.getRole().name(),
+                "role", user.getRole(),
                 "email", user.getEmail() != null ? user.getEmail() : ""
         ));
     }
@@ -128,7 +128,10 @@ public class AuthController {
                     .body(Map.of("message", "Username already exists"));
         }
 
-        Role role = request.getRole() != null ? request.getRole() : Role.USER;
+        String role = normalizeRole(request.getRole());
+        if (!role.matches("^[A-Z0-9_\\-]+$")) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Invalid role value"));
+        }
 
         User user = User.builder()
                 .username(normalizedUsername)
@@ -176,11 +179,11 @@ public class AuthController {
         }
 
         if (updates.containsKey("role")) {
-            try {
-                user.setRole(Role.valueOf(updates.get("role").toString()));
-            } catch (IllegalArgumentException e) {
+            String normalizedRole = normalizeRole(updates.get("role"));
+            if (!normalizedRole.matches("^[A-Z0-9_\\-]+$")) {
                 return ResponseEntity.badRequest().body(Map.of("message", "Invalid role value"));
             }
+            user.setRole(normalizedRole);
         }
 
         if (updates.containsKey("enabled")) {
@@ -210,5 +213,14 @@ public class AuthController {
                 user.isEnabled(),
                 user.getCreatedAt()
         );
+    }
+
+    private String normalizeRole(Object roleInput) {
+        if (roleInput == null) {
+            return "USER";
+        }
+
+        String role = roleInput.toString().trim().toUpperCase(Locale.ROOT);
+        return role.isEmpty() ? "USER" : role;
     }
 }

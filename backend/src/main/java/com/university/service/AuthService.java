@@ -7,7 +7,6 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.university.config.JwtUtil;
 import com.university.config.UserDetailsServiceImpl;
 import com.university.dto.LoginResponseDTO;
-import com.university.entity.Role;
 import com.university.entity.User;
 import com.university.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -65,7 +64,7 @@ public class AuthService {
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
         String appToken = jwtUtil.generateToken(userDetails);
-        return new LoginResponseDTO(appToken, user.getUsername(), user.getRole().name());
+        return new LoginResponseDTO(appToken, user.getUsername(), user.getRole());
     }
 
     private String extractNormalizedEmail(GoogleIdToken.Payload payload) {
@@ -98,7 +97,7 @@ public class AuthService {
                 .email(email)
                 // Random password allows future password reset flow without storing raw Google token.
                 .password(passwordEncoder.encode(UUID.randomUUID().toString()))
-                .role(Role.USER)
+                .role("USER")
                 .enabled(true)
                 .createdAt(LocalDateTime.now())
                 .build();

@@ -60,7 +60,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
 
                 // Resources: read for any authenticated user, write for admin only
-                .requestMatchers(HttpMethod.GET, "/resources/**").hasAnyRole("ADMIN", "TECHNICIAN", "USER")
+                .requestMatchers(HttpMethod.GET, "/resources/**").authenticated()
                 .requestMatchers(HttpMethod.POST, "/resources/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/resources/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/resources/**").hasRole("ADMIN")

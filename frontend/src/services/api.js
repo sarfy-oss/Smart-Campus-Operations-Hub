@@ -189,7 +189,17 @@ export const authAPI = {
 
   hasRole: (role) => {
     const p = getAuthProfile();
-    return p?.role === role || (Array.isArray(p?.roles) && p.roles.includes(role));
+    if (!p) return false;
+
+    const expected = String(role || '').toUpperCase();
+    const current = String(p.role || '').toUpperCase();
+    if (current === expected) return true;
+
+    if (Array.isArray(p.roles)) {
+      return p.roles.some((item) => String(item || '').toUpperCase() === expected);
+    }
+
+    return false;
   },
 
   isAdmin: () => authAPI.hasRole('ADMIN'),

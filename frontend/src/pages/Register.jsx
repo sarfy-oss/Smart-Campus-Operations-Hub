@@ -450,6 +450,7 @@ const registerStyles = String.raw`
  */
 const Register = () => {
   const navigate = useNavigate();
+  const isAdminRole = (role) => String(role || '').toUpperCase() === 'ADMIN';
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -533,7 +534,7 @@ const Register = () => {
       }
 
       toast.success(`Signed in as ${profile.username} (${profile.role})`);
-      const targetRoute = profile.role === 'ADMIN' ? '/dashboard' : '/resources';
+      const targetRoute = isAdminRole(profile.role) ? '/dashboard' : '/resources';
       if (AUTH_DEBUG_ENABLED) {
         // eslint-disable-next-line no-console
         console.log('[google] navigating to', targetRoute);
