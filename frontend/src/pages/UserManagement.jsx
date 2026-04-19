@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import OperationsSidebar from '../components/OperationsSidebar';
 import { authAPI } from '../services/api';
 import BrandLogo from '../components/BrandLogo';
+import { getBackendRoleOptions } from '../utils/roleConfig';
 
 const styles = String.raw`
 .um-page {
@@ -259,12 +260,14 @@ const styles = String.raw`
 `;
 
 const roleBadgeClass = (role) => {
-  if (role === 'ADMIN') return 'um-role-admin';
-  if (role === 'TECHNICIAN') return 'um-role-technician';
+  const normalizedRole = String(role || '').toUpperCase();
+  if (normalizedRole === 'ADMIN') return 'um-role-admin';
+  if (normalizedRole === 'TECHNICIAN') return 'um-role-technician';
   return 'um-role-user';
 };
 
 const EMPTY_EDIT = { username: '', email: '', password: '', confirmPassword: '', role: 'USER' };
+const getDefaultRoleValue = (options) => options.find((item) => item.value === 'USER')?.value || options[0]?.value || 'USER';
 
 const UserManagement = () => {
   const navigate = useNavigate();
@@ -279,6 +282,7 @@ const UserManagement = () => {
   const [createData, setCreateData] = useState({ username: '', email: '', password: '', role: 'USER' });
   const [createError, setCreateError] = useState('');
   const [createLoading, setCreateLoading] = useState(false);
+  const [roleOptions, setRoleOptions] = useState(() => getBackendRoleOptions());
 
   // Edit modal
   const [showEdit, setShowEdit] = useState(false);
@@ -291,6 +295,12 @@ const UserManagement = () => {
   const [showDelete, setShowDelete] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const refreshRoleOptions = useCallback(() => {
+    const nextOptions = getBackendRoleOptions();
+    setRoleOptions(nextOptions);
+    return nextOptions;
+  }, []);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -306,6 +316,30 @@ const UserManagement = () => {
 
   useEffect(() => { loadUsers(); }, [loadUsers]);
 
+  useEffect(() => {
+    refreshRoleOptions();
+
+    const syncRoleOptions = () => {
+      refreshRoleOptions();
+    };
+
+    window.addEventListener('storage', syncRoleOptions);
+    window.addEventListener('focus', syncRoleOptions);
+
+    return () => {
+      window.removeEventListener('storage', syncRoleOptions);
+      window.removeEventListener('focus', syncRoleOptions);
+    };
+  }, [refreshRoleOptions]);
+
+  const openCreate = () => {
+    const nextOptions = refreshRoleOptions();
+    const defaultRole = getDefaultRoleValue(nextOptions);
+    setCreateData({ username: '', email: '', password: '', role: defaultRole });
+    setCreateError('');
+    setShowCreate(true);
+  };
+
   // ── Create ──────────────────────────────────────────────
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
@@ -316,7 +350,7 @@ const UserManagement = () => {
       setUsers((prev) => [res.data, ...prev]);
       toast.success(`User "${createData.username}" created`);
       setShowCreate(false);
-      setCreateData({ username: '', email: '', password: '', role: 'USER' });
+      setCreateData({ username: '', email: '', password: '', role: getDefaultRoleValue(roleOptions) });
     } catch (err) {
       setCreateError(err.response?.data?.message || 'Failed to create user');
     } finally {
@@ -326,8 +360,18 @@ const UserManagement = () => {
 
   // ── Edit ────────────────────────────────────────────────
   const openEdit = (user) => {
+    const nextOptions = refreshRoleOptions();
+    const hasCurrentRoleOption = nextOptions.some((item) => item.value === user.role);
+    const mergedOptions = hasCurrentRoleOption
+      ? nextOptions
+      : [...nextOptions, { value: user.role, label: `${user.role} — existing role`, roleKey: '', name: user.role }];
+
+    if (!hasCurrentRoleOption) {
+      setRoleOptions(mergedOptions);
+    }
+
     setEditTarget(user);
-    setEditData({ username: user.username, email: user.email || '', password: '', confirmPassword: '', role: user.role });
+    setEditData({ username: user.username, email: user.email || '', password: '', confirmPassword: '', role: user.role || getDefaultRoleValue(mergedOptions) });
     setEditError('');
     setShowEdit(true);
   };
@@ -383,7 +427,7 @@ const UserManagement = () => {
   return (
     <div className="um-page">
       <style>{styles}</style>
-      <OperationsSidebar activeKey="users" />
+      <OperationsSidebar activeKey="user-management" />
 
       {/* ── Sidebar ── */}
       <aside className="um-sidebar" style={{ display: 'none' }}>
@@ -421,7 +465,7 @@ const UserManagement = () => {
 
         <div className="um-content">
           <div className="um-actions-bar">
-            <Button className="um-add-btn" onClick={() => setShowCreate(true)}>
+            <Button className="um-add-btn" onClick={openCreate}>
               + Add User
             </Button>
           </div>
@@ -536,9 +580,11 @@ const UserManagement = () => {
                 value={createData.role}
                 onChange={(e) => setCreateData({ ...createData, role: e.target.value })}
               >
-                <option value="USER">User — view, book, report</option>
-                <option value="TECHNICIAN">Technician — update tickets</option>
-                <option value="ADMIN">Admin — full access</option>
+                {roleOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </Form.Select>
             </Form.Group>
           </Modal.Body>
@@ -603,9 +649,11 @@ const UserManagement = () => {
                 value={editData.role}
                 onChange={(e) => setEditData({ ...editData, role: e.target.value })}
               >
-                <option value="USER">User — view, book, report</option>
-                <option value="TECHNICIAN">Technician — update tickets</option>
-                <option value="ADMIN">Admin — full access</option>
+                {roleOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </Form.Select>
             </Form.Group>
           </Modal.Body>

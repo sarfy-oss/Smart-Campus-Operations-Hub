@@ -28,7 +28,7 @@ public class User {
     private String password;
 
     @Builder.Default
-    private Role role = Role.USER;
+    private String role = "USER";
 
     @Builder.Default
     private boolean enabled = true;

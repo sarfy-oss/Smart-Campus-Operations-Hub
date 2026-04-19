@@ -7,7 +7,6 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.university.config.JwtUtil;
 import com.university.config.UserDetailsServiceImpl;
 import com.university.dto.LoginResponseDTO;
-import com.university.entity.Role;
 import com.university.entity.User;
 import com.university.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,9 +34,6 @@ import java.util.UUID;
 @Transactional
 public class AuthService {
 
-    private static final String ALLOWED_HOSTED_DOMAIN = "my.sliit.lk";
-    private static final String DOMAIN_ERROR_MESSAGE = "Only @my.sliit.lk Google accounts are allowed";
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserDetailsServiceImpl userDetailsService;
@@ -46,36 +42,29 @@ public class AuthService {
     @Value("${google.client.id}")
     private String googleClientId;
 
-    @Value("${google.restrict-sliit-domain:false}")
-    private boolean restrictSliitDomain;
-
     public LoginResponseDTO loginStudentWithGoogle(String token) {
         GoogleIdToken.Payload payload = verifyGoogleToken(token);
 
         String email = extractNormalizedEmail(payload);
         String hostedDomain = payload.getHostedDomain();
 
-        if (restrictSliitDomain) {
-            if (!ALLOWED_HOSTED_DOMAIN.equalsIgnoreCase(hostedDomain)) {
-                log.warn("Google auth rejected due hosted domain. email={}, hostedDomain={}", email, hostedDomain);
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, DOMAIN_ERROR_MESSAGE);
-            }
-
-            if (!email.endsWith("@" + ALLOWED_HOSTED_DOMAIN)) {
-                log.warn("Google auth rejected due email suffix. email={}", email);
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, DOMAIN_ERROR_MESSAGE);
-            }
-        }
+        log.info(
+                "Google login attempt: email={}, hostedDomain={}",
+                email,
+                hostedDomain
+        );
 
         User user = findOrCreateGoogleStudent(email);
         if (!user.isEnabled()) {
-            log.warn("Google auth rejected because account is disabled. username={}", user.getUsername());
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your account is disabled");
+            // Temporary behavior: re-enable disabled users when they prove ownership via Google.
+            log.warn("Re-enabling disabled account during Google auth. username={}", user.getUsername());
+            user.setEnabled(true);
+            user = userRepository.save(user);
         }
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
         String appToken = jwtUtil.generateToken(userDetails);
-        return new LoginResponseDTO(appToken, user.getUsername(), user.getRole().name());
+        return new LoginResponseDTO(appToken, user.getUsername(), user.getRole());
     }
 
     private String extractNormalizedEmail(GoogleIdToken.Payload payload) {
@@ -108,7 +97,7 @@ public class AuthService {
                 .email(email)
                 // Random password allows future password reset flow without storing raw Google token.
                 .password(passwordEncoder.encode(UUID.randomUUID().toString()))
-                .role(Role.USER)
+                .role("USER")
                 .enabled(true)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -120,6 +109,12 @@ public class AuthService {
         if (!StringUtils.hasText(idTokenString)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Google token is required");
         }
+
+        log.info(
+                "Verifying Google ID token. configuredAudience={}, tokenLength={}",
+                googleClientId,
+                idTokenString.length()
+        );
 
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
                 new NetHttpTransport(),
@@ -134,6 +129,7 @@ public class AuthService {
             if (idToken == null) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid Google token");
             }
+            log.info("Google ID token verified successfully for audience={}", googleClientId);
             return idToken.getPayload();
         } catch (GeneralSecurityException | IOException ex) {
             log.warn("Google token verification failed: {}", ex.getMessage());

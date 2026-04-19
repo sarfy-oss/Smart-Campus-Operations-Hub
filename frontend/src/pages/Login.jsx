@@ -8,7 +8,7 @@ import GoogleSignInButton from '../components/GoogleSignInButton';
 //   process.NODE_ENV !== 'production' &&
 //   process.REACT_APP_AUTH_DEBUG === 'true';
 const AUTH_DEBUG_ENABLED =
-  process.env.NODE_ENV !== 'production' &&
+  process.env.NODE_ENV !== 'production' ||
   process.env.REACT_APP_AUTH_DEBUG === 'true';
 
 const loginStyles = String.raw`
@@ -504,6 +504,7 @@ const loginStyles = String.raw`
  */
 const Login = () => {
   const navigate = useNavigate();
+  const isAdminRole = (role) => String(role || '').toUpperCase() === 'ADMIN';
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -544,7 +545,7 @@ const Login = () => {
     try {
       const profile = await authAPI.login(loginId, formData.password);
       toast.success(`Logged in as ${profile.username} (${profile.role})`);
-      navigate(profile.role === 'ADMIN' ? '/dashboard' : '/resources');
+      navigate(isAdminRole(profile.role) ? '/dashboard' : '/resources');
     } catch (err) {
       if (!err.response) {
         setError('Cannot connect to backend. Make sure API is running on http://localhost:8080.');
@@ -579,7 +580,7 @@ const Login = () => {
       }
 
       toast.success(`Logged in as ${profile.username} (${profile.role})`);
-      const targetRoute = profile.role === 'ADMIN' ? '/dashboard' : '/resources';
+      const targetRoute = isAdminRole(profile.role) ? '/dashboard' : '/resources';
       if (AUTH_DEBUG_ENABLED) {
         // eslint-disable-next-line no-console
         console.log('[google] navigating to', targetRoute);
@@ -588,7 +589,11 @@ const Login = () => {
     } catch (err) {
       if (AUTH_DEBUG_ENABLED) {
         // eslint-disable-next-line no-console
-        console.error('[google] login flow failed', err);
+        console.error('[google] login flow failed', {
+          message: err?.message,
+          status: err?.response?.status,
+          data: err?.response?.data,
+        });
       }
 
       if (!err.response && err.message) {

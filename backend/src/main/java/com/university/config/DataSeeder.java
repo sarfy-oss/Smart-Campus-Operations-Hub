@@ -1,6 +1,5 @@
 package com.university.config;
 
-import com.university.entity.Role;
 import com.university.entity.User;
 import com.university.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +26,7 @@ public class DataSeeder implements ApplicationRunner {
                     .username("admin")
                     .email("admin@smartcampus.edu")
                     .password(passwordEncoder.encode("admin123"))
-                    .role(Role.ADMIN)
+                    .role("ADMIN")
                     .enabled(true)
                     .createdAt(LocalDateTime.now())
                     .build();

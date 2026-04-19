@@ -1,6 +1,5 @@
 package com.university.dto;
 
-import com.university.entity.Role;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -18,5 +17,5 @@ public class CreateUserDTO {
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
 
-    private Role role = Role.USER;
+    private String role = "USER";
 }

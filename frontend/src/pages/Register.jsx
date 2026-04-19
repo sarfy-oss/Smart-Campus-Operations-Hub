@@ -5,7 +5,7 @@ import { authAPI } from '../services/api';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 
 const AUTH_DEBUG_ENABLED =
-  process.env.NODE_ENV !== 'production' &&
+  process.env.NODE_ENV !== 'production' ||
   process.env.REACT_APP_AUTH_DEBUG === 'true';
 
 const registerStyles = String.raw`
@@ -450,6 +450,7 @@ const registerStyles = String.raw`
  */
 const Register = () => {
   const navigate = useNavigate();
+  const isAdminRole = (role) => String(role || '').toUpperCase() === 'ADMIN';
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -533,7 +534,7 @@ const Register = () => {
       }
 
       toast.success(`Signed in as ${profile.username} (${profile.role})`);
-      const targetRoute = profile.role === 'ADMIN' ? '/dashboard' : '/resources';
+      const targetRoute = isAdminRole(profile.role) ? '/dashboard' : '/resources';
       if (AUTH_DEBUG_ENABLED) {
         // eslint-disable-next-line no-console
         console.log('[google] navigating to', targetRoute);
@@ -542,7 +543,11 @@ const Register = () => {
     } catch (err) {
       if (AUTH_DEBUG_ENABLED) {
         // eslint-disable-next-line no-console
-        console.error('[google] login flow failed (register page)', err);
+        console.error('[google] login flow failed (register page)', {
+          message: err?.message,
+          status: err?.response?.status,
+          data: err?.response?.data,
+        });
       }
 
       if (!err.response && err.message) {

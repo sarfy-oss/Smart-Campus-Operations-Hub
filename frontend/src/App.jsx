@@ -14,6 +14,7 @@ import ResourceList from './pages/ResourceList';
 import ResourceForm from './components/ResourceForm';
 import ResourceDetails from './pages/ResourceDetails';
 import UserManagement from './pages/UserManagement';
+import UserRoleManagement from './pages/UserRoleManagement';
 import { authAPI } from './services/api';
 import { NotificationProvider } from './context/NotificationContext';
 
@@ -61,6 +62,7 @@ function App() {
             <Route path="/resources/edit/:id" element={<ProtectedRoute adminOnly><ResourceForm /></ProtectedRoute>} />
             <Route path="/resources/:id" element={<ProtectedRoute><ResourceDetails /></ProtectedRoute>} />
             <Route path="/users" element={<ProtectedRoute adminOnly><UserManagement /></ProtectedRoute>} />
+            <Route path="/users/roles" element={<ProtectedRoute adminOnly><UserRoleManagement /></ProtectedRoute>} />
             <Route path="/" element={<HomeRoute />} />
           </Routes>
         </main>
