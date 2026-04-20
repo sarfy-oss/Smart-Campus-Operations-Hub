@@ -86,6 +86,17 @@ const profileStyles = String.raw`
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_STRENGTH_REGEX = /^(?=.*[A-Za-z])(?=.*\d).{6,}$/;
 
+/* 
+const extractApiError = (error, fallbackMessage) => {
+  const response = error?.response?.data;
+  if (response?.message) {
+    return response.message;
+  } */
+
+
+
+
+
 const extractApiError = (error, fallbackMessage) => {
   const response = error?.response?.data;
   if (response?.message) {
