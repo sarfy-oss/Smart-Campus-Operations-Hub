@@ -34,6 +34,7 @@ const Header = () => {
               <>
                 <Nav.Link href="/resources">Resources</Nav.Link>
                 {isAdmin && <Nav.Link href="/resources/add">Add Resource</Nav.Link>}
+                {isAdmin && <Nav.Link href="/users">User Management</Nav.Link>}
                 <Nav.Item className="d-flex align-items-center mx-2">
                   <NotificationPanel />
                 </Nav.Item>
@@ -43,7 +44,7 @@ const Header = () => {
                   </Dropdown.Toggle>
                   <Dropdown.Menu>
                     <Dropdown.ItemText>
-                      Role: {profile?.roles?.join(', ') || 'USER'}
+                      Role: {profile?.role || 'USER'}
                     </Dropdown.ItemText>
                     <Dropdown.Item onClick={handleLogout}>Logout</Dropdown.Item>
                   </Dropdown.Menu>
