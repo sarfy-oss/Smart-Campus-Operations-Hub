@@ -172,6 +172,11 @@ const UserRoleManagement = () => {
     setShowDeleteModal(true);
   };
 
+  /* const openDeleteModal = (roleItem) => {
+    setDeleteTarget(roleItem);
+    setShowDeleteModal(true);
+  }; */
+
   const handleDeleteConfirm = () => {
     if (!deleteTarget) return;
 
