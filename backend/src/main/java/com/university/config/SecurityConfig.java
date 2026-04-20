@@ -58,6 +58,9 @@ public class SecurityConfig {
 
                 // Authenticated user profile
                 .requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/auth/me").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/auth/me/password").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/auth/me").authenticated()
 
                 // Resources: read for any authenticated user, write for admin only
                 .requestMatchers(HttpMethod.GET, "/resources/**").authenticated()

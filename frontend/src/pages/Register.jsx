@@ -1,8 +1,10 @@
 import React, { useCallback, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { authAPI } from '../services/api';
 import GoogleSignInButton from '../components/GoogleSignInButton';
+import { fetchCurrentUser, setUserProfile } from '../store/userSlice';
 
 const AUTH_DEBUG_ENABLED =
   process.env.NODE_ENV !== 'production' ||
@@ -450,6 +452,7 @@ const registerStyles = String.raw`
  */
 const Register = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const isAdminRole = (role) => String(role || '').toUpperCase() === 'ADMIN';
   const [formData, setFormData] = useState({
     username: '',
@@ -532,6 +535,8 @@ const Register = () => {
       if (!savedProfile?.token) {
         throw new Error('Authentication state was not saved after Google login');
       }
+      dispatch(setUserProfile(savedProfile));
+      dispatch(fetchCurrentUser());
 
       toast.success(`Signed in as ${profile.username} (${profile.role})`);
       const targetRoute = isAdminRole(profile.role) ? '/dashboard' : '/resources';
@@ -561,7 +566,7 @@ const Register = () => {
     } finally {
       setGoogleLoading(false);
     }
-  }, [navigate]);
+  }, [dispatch, navigate]);
 
   const handleGoogleError = useCallback((message) => {
     setError(message || 'Google sign-in failed. Please try again.');
