@@ -128,6 +128,7 @@ const sidebarStyles = String.raw`
 const NAV_ITEMS = [
   { key: 'dashboard', type: 'link', label: 'Dashboard', shortLabel: 'DB', path: '/dashboard', adminOnly: true },
   { key: 'resources', type: 'link', label: 'Resources', shortLabel: 'RS', path: '/resources' },
+  { key: 'profile', type: 'link', label: 'Profile', shortLabel: 'PR', path: '/profile' },
   { key: 'bookings', type: 'link', label: 'Bookings', shortLabel: 'BK', path: '/bookings', adminOnly: true },
   { key: 'issues', type: 'link', label: 'Issues', shortLabel: 'IS', path: '/issues', adminOnly: true },
   {

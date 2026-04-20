@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import OperationsSidebar from '../components/OperationsSidebar';
-import { authAPI, resourceAPI } from '../services/api';
+import TopbarUserMenu from '../components/TopbarUserMenu';
+import { resourceAPI } from '../services/api';
 import { getEnumDisplay } from '../utils/helpers';
 import { adminWorkspaceBaseStyles } from './adminWorkspaceStyles';
 
@@ -16,7 +17,6 @@ const bookingsStyles = String.raw`
 
 const BookingsOverview = () => {
   const navigate = useNavigate();
-  const profile = authAPI.getProfile();
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,11 +36,6 @@ const BookingsOverview = () => {
 
     loadResources();
   }, []);
-
-  const handleLogout = () => {
-    authAPI.logout();
-    navigate('/login');
-  };
 
   const bookingSummary = useMemo(() => {
     const ready = [];
@@ -108,12 +103,10 @@ const BookingsOverview = () => {
       <section className="aw-main">
         <header className="aw-topbar">
           <h1>Booking Operations</h1>
-          <div className="aw-user-menu">
-            <span>{profile?.username || 'Admin'}</span>
-            <button type="button" onClick={handleLogout} className="aw-logout-btn">
-              Logout
-            </button>
-          </div>
+          <TopbarUserMenu
+            containerClassName="aw-user-menu"
+            logoutButtonClassName="aw-logout-btn"
+          />
         </header>
 
         <div className="aw-content">

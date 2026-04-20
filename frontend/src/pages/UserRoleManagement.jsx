@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Form, Modal } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import OperationsSidebar from '../components/OperationsSidebar';
-import { authAPI } from '../services/api';
+import TopbarUserMenu from '../components/TopbarUserMenu';
 import { adminWorkspaceBaseStyles } from './adminWorkspaceStyles';
 import { createRoleId, loadRoleItems, normalizeRole, saveRoleItems } from '../utils/roleConfig';
 
@@ -54,10 +53,6 @@ const roleManagementStyles = String.raw`
 `;
 
 const UserRoleManagement = () => {
-  const navigate = useNavigate();
-  const profile = authAPI.getProfile();
-  const currentUsername = profile?.username;
-
   const [roles, setRoles] = useState(loadRoleItems);
   const [createData, setCreateData] = useState({ name: '', role: '' });
   const [createError, setCreateError] = useState('');
@@ -99,11 +94,6 @@ const UserRoleManagement = () => {
     }
 
     return '';
-  };
-
-  const handleLogout = () => {
-    authAPI.logout();
-    navigate('/login');
   };
 
   const handleCreateSubmit = (event) => {
@@ -194,12 +184,10 @@ const UserRoleManagement = () => {
       <section className="aw-main">
         <header className="aw-topbar">
           <h1>User Role Management</h1>
-          <div className="aw-user-menu">
-            <span>{currentUsername || 'Admin'}</span>
-            <button type="button" onClick={handleLogout} className="aw-logout-btn">
-              Logout
-            </button>
-          </div>
+          <TopbarUserMenu
+            containerClassName="aw-user-menu"
+            logoutButtonClassName="aw-logout-btn"
+          />
         </header>
 
         <div className="aw-content">

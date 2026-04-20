@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
 import {
   Spinner,
   Button,
 } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
 import OperationsSidebar from '../components/OperationsSidebar';
+import TopbarUserMenu from '../components/TopbarUserMenu';
 import { authAPI, resourceAPI } from '../services/api';
 import { formatDate, getEnumDisplay } from '../utils/helpers';
 import BrandLogo from '../components/BrandLogo';
@@ -473,7 +473,6 @@ const ResourceDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isAdmin = authAPI.isAdmin();
-  const profile = authAPI.getProfile();
 
   const [resource, setResource] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -495,12 +494,6 @@ const ResourceDetails = () => {
 
     loadResource();
   }, [id]);
-
-  const handleLogout = () => {
-    authAPI.logout();
-    toast.success('Logged out successfully');
-    navigate('/login');
-  };
 
   const getResourceImageSrc = (item) => {
     const value = (item?.imageUrl || '').trim();
@@ -569,12 +562,10 @@ const ResourceDetails = () => {
       <section className="rm-main">
         <header className="rm-topbar">
           <h1>Resource Details</h1>
-          <div className="rm-user-menu">
-            <span>{profile?.username || 'Account'}</span>
-            <button type="button" onClick={handleLogout} className="rm-logout-btn">
-              Logout
-            </button>
-          </div>
+          <TopbarUserMenu
+            containerClassName="rm-user-menu"
+            logoutButtonClassName="rm-logout-btn"
+          />
         </header>
 
         <div className="rm-content">
