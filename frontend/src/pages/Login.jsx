@@ -499,6 +499,9 @@ const loginStyles = String.raw`
 }
 `;
 
+
+/* Modern Login Page */
+
 /**
  * Modern Login Page - Split layout with gradient left and white form right
  */
@@ -578,7 +581,12 @@ const Login = () => {
       if (!savedProfile?.token) {
         throw new Error('Authentication state was not saved after Google login');
       }
+/*  const profile = await authAPI.loginWithGoogle(idToken);
+      const savedProfile = authAPI.getProfile();
 
+      if (!savedProfile?.token) {
+        throw new Error('Authentication state was not saved after Google login');
+      }*/ 
       toast.success(`Logged in as ${profile.username} (${profile.role})`);
       const targetRoute = isAdminRole(profile.role) ? '/dashboard' : '/resources';
       if (AUTH_DEBUG_ENABLED) {
