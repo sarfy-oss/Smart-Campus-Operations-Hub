@@ -533,6 +533,9 @@ const Login = () => {
     const loginId = formData.username.trim();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+    /*const loginId = formData.username.trim();
+    const emailRegex =  */
+
     if (!loginId || !formData.password) {
       setError('Please enter username/email and password');
       return;
