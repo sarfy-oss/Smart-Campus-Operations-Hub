@@ -2,11 +2,13 @@ package com.university.controller;
 
 import com.university.config.JwtUtil;
 import com.university.config.UserDetailsServiceImpl;
+import com.university.dto.ChangePasswordRequestDTO;
 import com.university.dto.CreateUserDTO;
 import com.university.dto.GoogleAuthRequest;
 import com.university.dto.LoginRequestDTO;
 import com.university.dto.LoginResponseDTO;
 import com.university.dto.RegisterRequestDTO;
+import com.university.dto.UpdateProfileRequestDTO;
 import com.university.dto.UserResponseDTO;
 import com.university.entity.User;
 import com.university.repository.UserRepository;
@@ -21,12 +23,21 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @RestController
@@ -45,6 +56,9 @@ import java.util.stream.Collectors;
         "https://[::1]:*"
 })
 public class AuthController {
+
+    private static final Pattern EMAIL_REGEX =
+            Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
     private final AuthenticationManager authenticationManager;
     private final UserDetailsServiceImpl userDetailsService;
@@ -73,7 +87,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterRequestDTO request) {
-        String normalizedUsername = request.getUsername().trim().toLowerCase();
+        String normalizedUsername = request.getUsername().trim().toLowerCase(Locale.ROOT);
 
         if (userRepository.existsByUsername(normalizedUsername)) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -103,13 +117,79 @@ public class AuthController {
     public ResponseEntity<Map<String, Object>> me(Authentication authentication) {
         User user = userRepository.findByUsername(authentication.getName()).orElseThrow();
         return ResponseEntity.ok(Map.of(
+                "id", user.getId(),
                 "username", user.getUsername(),
                 "role", user.getRole(),
-                "email", user.getEmail() != null ? user.getEmail() : ""
+                "email", safeEmail(user)
         ));
     }
 
-    // ── Admin: User Management ────────────────────────────────────────────────
+    @PutMapping("/me")
+    public ResponseEntity<?> updateMyProfile(
+            Authentication authentication,
+            @Valid @RequestBody UpdateProfileRequestDTO request
+    ) {
+        User user = userRepository.findByUsername(authentication.getName()).orElseThrow();
+        String normalizedUsername = request.getUsername().trim().toLowerCase(Locale.ROOT);
+
+        if (!normalizedUsername.equals(user.getUsername()) && userRepository.existsByUsername(normalizedUsername)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("message", "Username already taken"));
+        }
+
+        String normalizedEmail = request.getEmail() == null
+                ? ""
+                : request.getEmail().trim().toLowerCase(Locale.ROOT);
+
+        if (!isEmailValidOrBlank(normalizedEmail)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Please provide a valid email address"));
+        }
+
+        user.setUsername(normalizedUsername);
+        user.setEmail(normalizedEmail);
+        User saved = userRepository.save(user);
+
+        UserDetails updatedUserDetails = userDetailsService.loadUserByUsername(saved.getUsername());
+        String refreshedToken = jwtUtil.generateToken(updatedUserDetails);
+
+        return ResponseEntity.ok(Map.of(
+                "id", saved.getId(),
+                "token", refreshedToken,
+                "username", saved.getUsername(),
+                "role", saved.getRole(),
+                "email", safeEmail(saved)
+        ));
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<?> changeMyPassword(
+            Authentication authentication,
+            @Valid @RequestBody ChangePasswordRequestDTO request
+    ) {
+        User user = userRepository.findByUsername(authentication.getName()).orElseThrow();
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Current password is incorrect"));
+        }
+
+        if (request.getCurrentPassword().equals(request.getNewPassword())) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "New password must be different from the current password"));
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Map<String, String>> deleteMyAccount(Authentication authentication) {
+        User user = userRepository.findByUsername(authentication.getName()).orElseThrow();
+        userRepository.deleteById(user.getId());
+        return ResponseEntity.ok(Map.of("message", "Account deleted successfully"));
+    }
 
     @GetMapping("/users")
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
@@ -121,7 +201,7 @@ public class AuthController {
 
     @PostMapping("/users")
     public ResponseEntity<?> createUser(@Valid @RequestBody CreateUserDTO request) {
-        String normalizedUsername = request.getUsername().trim().toLowerCase();
+        String normalizedUsername = request.getUsername().trim().toLowerCase(Locale.ROOT);
 
         if (userRepository.existsByUsername(normalizedUsername)) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -155,7 +235,7 @@ public class AuthController {
         }
 
         if (updates.containsKey("username")) {
-            String newUsername = updates.get("username").toString().trim().toLowerCase();
+            String newUsername = updates.get("username").toString().trim().toLowerCase(Locale.ROOT);
             if (newUsername.length() < 3) {
                 return ResponseEntity.badRequest().body(Map.of("message", "Username must be at least 3 characters"));
             }
@@ -222,5 +302,13 @@ public class AuthController {
 
         String role = roleInput.toString().trim().toUpperCase(Locale.ROOT);
         return role.isEmpty() ? "USER" : role;
+    }
+
+    private boolean isEmailValidOrBlank(String email) {
+        return email == null || email.isBlank() || EMAIL_REGEX.matcher(email).matches();
+    }
+
+    private String safeEmail(User user) {
+        return user.getEmail() == null ? "" : user.getEmail();
     }
 }

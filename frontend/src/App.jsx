@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -15,8 +16,11 @@ import ResourceForm from './components/ResourceForm';
 import ResourceDetails from './pages/ResourceDetails';
 import UserManagement from './pages/UserManagement';
 import UserRoleManagement from './pages/UserRoleManagement';
+import ProfileManagement from './pages/ProfileManagement';
+import BookingsPage from './pages/BookingsPage';
 import { authAPI } from './services/api';
 import { NotificationProvider } from './context/NotificationContext';
+import { clearUserProfile, fetchCurrentUser, setUserProfile } from './store/userSlice';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   if (!authAPI.isAuthenticated()) {
@@ -44,7 +48,19 @@ const HomeRoute = () => {
 function App() {
   const AppContent = () => {
     const location = useLocation();
-    const hideHeader = ['/resources', '/users', '/dashboard', '/bookings', '/issues']
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+      if (!authAPI.isAuthenticated()) {
+        dispatch(clearUserProfile());
+        return;
+      }
+
+      dispatch(setUserProfile(authAPI.getProfile()));
+      dispatch(fetchCurrentUser());
+    }, [dispatch]);
+
+    const hideHeader = ['/resources', '/users', '/dashboard', '/bookings', '/issues', '/profile', '/my-bookings']
       .some((prefix) => location.pathname.startsWith(prefix));
 
     return (
@@ -63,6 +79,8 @@ function App() {
             <Route path="/resources/:id" element={<ProtectedRoute><ResourceDetails /></ProtectedRoute>} />
             <Route path="/users" element={<ProtectedRoute adminOnly><UserManagement /></ProtectedRoute>} />
             <Route path="/users/roles" element={<ProtectedRoute adminOnly><UserRoleManagement /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><ProfileManagement /></ProtectedRoute>} />
+            <Route path="/my-bookings" element={<ProtectedRoute><BookingsPage /></ProtectedRoute>} />
             <Route path="/" element={<HomeRoute />} />
           </Routes>
         </main>

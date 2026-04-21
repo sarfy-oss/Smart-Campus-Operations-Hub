@@ -81,7 +81,9 @@ const saveAuthProfile = (profile) => {
   localStorage.setItem(
     LEGACY_USER_KEY,
     JSON.stringify({
+      id: profile?.id || '',
       username: profile?.username || '',
+      email: profile?.email || '',
       role: profile?.role || '',
     })
   );
@@ -183,9 +185,30 @@ export const authAPI = {
 
   logout: () => clearAuthProfile(),
 
+  setProfile: (profile) => {
+    const merged = {
+      ...(getAuthProfile() || {}),
+      ...(profile || {}),
+    };
+    saveAuthProfile(merged);
+    return merged;
+  },
+
   isAuthenticated: () => !!getAuthProfile()?.token,
 
   getProfile: () => getAuthProfile(),
+
+  getCurrentUser: () => apiClient.get('/auth/me'),
+
+  updateMyProfile: async (data) => {
+    const response = await apiClient.put('/auth/me', data);
+    const mergedProfile = authAPI.setProfile(response.data);
+    return mergedProfile;
+  },
+
+  changeMyPassword: (data) => apiClient.put('/auth/me/password', data),
+
+  deleteMyAccount: () => apiClient.delete('/auth/me'),
 
   hasRole: (role) => {
     const p = getAuthProfile();
@@ -227,6 +250,29 @@ export const notificationAPI = {
   create: (notification) => apiClient.post('/notifications', notification),
 
   delete: (id) => apiClient.delete(`/notifications/${id}`),
+};
+
+/**
+ * Booking API Service
+ */
+export const bookingAPI = {
+  createBooking: (data) => apiClient.post('/bookings', data),
+
+  getMyBookings: (page = 0, size = 10) =>
+    apiClient.get('/bookings/my', { params: { page, size } }),
+
+  getAllBookings: (page = 0, size = 10, status = null) =>
+    apiClient.get('/bookings', { params: { page, size, ...(status && { status }) } }),
+
+  getBookingById: (id) => apiClient.get(`/bookings/${id}`),
+
+  updateBooking: (id, data) => apiClient.put(`/bookings/${id}`, data),
+
+  updateBookingStatus: (id, data) => apiClient.put(`/bookings/${id}/status`, data),
+
+  cancelBooking: (id) => apiClient.put(`/bookings/${id}/cancel`),
+
+  deleteBooking: (id) => apiClient.delete(`/bookings/${id}`),
 };
 
 export default apiClient;

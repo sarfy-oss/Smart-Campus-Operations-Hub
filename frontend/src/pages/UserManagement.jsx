@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useSelector } from 'react-redux';
 import { Button, Modal, Form, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import OperationsSidebar from '../components/OperationsSidebar';
+import TopbarUserMenu from '../components/TopbarUserMenu';
 import { authAPI } from '../services/api';
+import { selectCurrentUserName } from '../store/userSlice';
 import BrandLogo from '../components/BrandLogo';
 import { getBackendRoleOptions } from '../utils/roleConfig';
 
@@ -271,8 +274,7 @@ const getDefaultRoleValue = (options) => options.find((item) => item.value === '
 
 const UserManagement = () => {
   const navigate = useNavigate();
-  const profile = authAPI.getProfile();
-  const currentUsername = profile?.username;
+  const currentUsername = useSelector(selectCurrentUserName);
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -420,8 +422,6 @@ const UserManagement = () => {
     }
   };
 
-  const handleLogout = () => { authAPI.logout(); navigate('/login'); };
-
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '-';
 
   return (
@@ -457,10 +457,10 @@ const UserManagement = () => {
       <section className="um-main">
         <header className="um-topbar">
           <h1>User Management</h1>
-          <div className="um-user-menu">
-            <span>{currentUsername}</span>
-            <button className="um-logout-btn" onClick={handleLogout}>Logout</button>
-          </div>
+          <TopbarUserMenu
+            containerClassName="um-user-menu"
+            logoutButtonClassName="um-logout-btn"
+          />
         </header>
 
         <div className="um-content">
