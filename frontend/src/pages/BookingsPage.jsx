@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Modal, Button, Form, Spinner, Badge } from 'react-bootstrap';
 import { authAPI, bookingAPI, resourceAPI } from '../services/api';
-import BrandLogo from '../components/BrandLogo';
+import OperationsSidebar from '../components/OperationsSidebar';
+import TopbarUserMenu from '../components/TopbarUserMenu';
 
 /* ─── Styles ─────────────────────────────────────────────────────────────── */
 const styles = `
@@ -58,7 +59,6 @@ const emptyForm = { resourceId:'', bookingDate:'', startTime:'', endTime:'', pur
 export default function BookingsPage() {
   const navigate  = useNavigate();
   const isAdmin   = authAPI.isAdmin();
-  const profile   = authAPI.getProfile();
 
   const [bookings,    setBookings]    = useState([]);
   const [loading,     setLoading]     = useState(true);
@@ -204,8 +204,6 @@ export default function BookingsPage() {
     } finally { setSaving(false); }
   };
 
-  const handleLogout = () => { authAPI.logout(); navigate('/login'); };
-
   /* ── helpers ── */
   const tabs = isAdmin ? ['all','PENDING','APPROVED','REJECTED','CANCELLED'] : [];
   const from = totalItems === 0 ? 0 : page * 10 + 1;
@@ -266,27 +264,13 @@ export default function BookingsPage() {
     <div className="bp-page">
       <style>{styles}</style>
 
-      {/* Sidebar */}
-      <aside className="bp-sidebar">
-        <div className="bp-brand"><BrandLogo /></div>
-        <nav className="bp-nav">
-          <button className="bp-nav-item" onClick={() => navigate('/resources')}>
-            <span>▣</span> Resources
-          </button>
-          <button className="bp-nav-item bp-nav-item-active">
-            <span>▤</span> Bookings
-          </button>
-        </nav>
-      </aside>
+      <OperationsSidebar activeKey="my-bookings" />
 
       {/* Main */}
       <section className="bp-main">
         <header className="bp-topbar">
           <h1>Bookings {totalItems > 0 && <small style={{fontSize:16,color:'#6b7280',fontWeight:400}}>({totalItems} total)</small>}</h1>
-          <div className="bp-user-menu">
-            <span>{profile?.username}</span>
-            <button className="bp-logout-btn" onClick={handleLogout}>Logout</button>
-          </div>
+          <TopbarUserMenu containerClassName="bp-user-menu" logoutButtonClassName="bp-logout-btn" />
         </header>
 
         <div className="bp-content">
