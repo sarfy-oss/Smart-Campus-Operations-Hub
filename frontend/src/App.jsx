@@ -90,7 +90,12 @@ function App() {
 
   return (
     <NotificationProvider>
-      <Router>
+      <Router
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <AppContent />
         <ToastContainer
           position="bottom-right"
