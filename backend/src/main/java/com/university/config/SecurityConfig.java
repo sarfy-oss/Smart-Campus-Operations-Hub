@@ -71,6 +71,16 @@ public class SecurityConfig {
                 // Notifications for authenticated users
                 .requestMatchers("/notifications/**").authenticated()
 
+                // Bookings - admin-only endpoints first (more specific)
+                .requestMatchers(HttpMethod.GET, "/bookings").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/bookings/*/status").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/bookings/*").hasRole("ADMIN")
+                // Bookings - authenticated users
+                .requestMatchers(HttpMethod.POST, "/bookings").hasAnyRole("USER", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/bookings/my").hasAnyRole("USER", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/bookings/**").hasAnyRole("USER", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/bookings/**").hasAnyRole("USER", "ADMIN")
+
                 // All other requests require authentication
                 .anyRequest().authenticated()
             )

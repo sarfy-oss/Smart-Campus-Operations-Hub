@@ -14,9 +14,11 @@ import Register from './pages/Register';
 import ResourceList from './pages/ResourceList';
 import ResourceForm from './components/ResourceForm';
 import ResourceDetails from './pages/ResourceDetails';
+<<<<<<< HEAD
 import UserManagement from './pages/UserManagement';
 import UserRoleManagement from './pages/UserRoleManagement';
 import ProfileManagement from './pages/ProfileManagement';
+import BookingsPage from './pages/BookingsPage';
 import { authAPI } from './services/api';
 import { NotificationProvider } from './context/NotificationContext';
 import { clearUserProfile, fetchCurrentUser, setUserProfile } from './store/userSlice';
@@ -47,6 +49,7 @@ const HomeRoute = () => {
 function App() {
   const AppContent = () => {
     const location = useLocation();
+<<<<<<< HEAD
     const dispatch = useDispatch();
 
     useEffect(() => {
@@ -76,9 +79,11 @@ function App() {
             <Route path="/resources/add" element={<ProtectedRoute adminOnly><ResourceForm /></ProtectedRoute>} />
             <Route path="/resources/edit/:id" element={<ProtectedRoute adminOnly><ResourceForm /></ProtectedRoute>} />
             <Route path="/resources/:id" element={<ProtectedRoute><ResourceDetails /></ProtectedRoute>} />
+<<<<<<< HEAD
             <Route path="/users" element={<ProtectedRoute adminOnly><UserManagement /></ProtectedRoute>} />
             <Route path="/users/roles" element={<ProtectedRoute adminOnly><UserRoleManagement /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfileManagement /></ProtectedRoute>} />
+            <Route path="/my-bookings" element={<ProtectedRoute><BookingsPage /></ProtectedRoute>} />
             <Route path="/" element={<HomeRoute />} />
           </Routes>
         </main>
