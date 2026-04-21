@@ -14,7 +14,6 @@ import Register from './pages/Register';
 import ResourceList from './pages/ResourceList';
 import ResourceForm from './components/ResourceForm';
 import ResourceDetails from './pages/ResourceDetails';
-<<<<<<< HEAD
 import UserManagement from './pages/UserManagement';
 import UserRoleManagement from './pages/UserRoleManagement';
 import ProfileManagement from './pages/ProfileManagement';
@@ -49,7 +48,6 @@ const HomeRoute = () => {
 function App() {
   const AppContent = () => {
     const location = useLocation();
-<<<<<<< HEAD
     const dispatch = useDispatch();
 
     useEffect(() => {
@@ -62,7 +60,7 @@ function App() {
       dispatch(fetchCurrentUser());
     }, [dispatch]);
 
-    const hideHeader = ['/resources', '/users', '/dashboard', '/bookings', '/issues', '/profile']
+    const hideHeader = ['/resources', '/users', '/dashboard', '/bookings', '/issues', '/profile', '/my-bookings']
       .some((prefix) => location.pathname.startsWith(prefix));
 
     return (
@@ -79,7 +77,6 @@ function App() {
             <Route path="/resources/add" element={<ProtectedRoute adminOnly><ResourceForm /></ProtectedRoute>} />
             <Route path="/resources/edit/:id" element={<ProtectedRoute adminOnly><ResourceForm /></ProtectedRoute>} />
             <Route path="/resources/:id" element={<ProtectedRoute><ResourceDetails /></ProtectedRoute>} />
-<<<<<<< HEAD
             <Route path="/users" element={<ProtectedRoute adminOnly><UserManagement /></ProtectedRoute>} />
             <Route path="/users/roles" element={<ProtectedRoute adminOnly><UserRoleManagement /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfileManagement /></ProtectedRoute>} />
