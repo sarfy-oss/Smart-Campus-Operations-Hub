@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { authAPI } from '../services/api';
 import { clearUserProfile, selectCurrentUserName } from '../store/userSlice';
+import NotificationPanel from './NotificationPanel';
 import './TopbarUserMenu.css';
 
 const TopbarUserMenu = ({
@@ -28,6 +29,8 @@ const TopbarUserMenu = ({
 
   return (
     <div className={containerClassName}>
+      <NotificationPanel />
+
       <button
         type="button"
         className="topbar-profile-btn"
