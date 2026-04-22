@@ -5,6 +5,7 @@ import { Modal, Button, Form, Spinner, Badge } from 'react-bootstrap';
 import { authAPI, bookingAPI, resourceAPI } from '../services/api';
 import OperationsSidebar from '../components/OperationsSidebar';
 import TopbarUserMenu from '../components/TopbarUserMenu';
+import { useNotifications } from '../context/NotificationContext';
 
 /* ─── Styles ─────────────────────────────────────────────────────────────── */
 const styles = `
@@ -114,6 +115,7 @@ const BookingForm = ({ form, setForm, resources, onSubmit, onClose, title, submi
 export default function BookingsPage() {
   const navigate  = useNavigate();
   const isAdmin   = authAPI.isAdmin();
+  const { fetchNotifications } = useNotifications();
 
   const [bookings,    setBookings]    = useState([]);
   const [loading,     setLoading]     = useState(true);
@@ -206,6 +208,7 @@ export default function BookingsPage() {
       toast.success('Booking request submitted!');
       closeModal();
       fetchBookings();
+      setTimeout(fetchNotifications, 500); // refresh notification bell
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to create booking');
     } finally { setSaving(false); }
@@ -254,6 +257,7 @@ export default function BookingsPage() {
       toast.success(`Booking ${statusForm.status.toLowerCase()}!`);
       closeModal();
       fetchBookings();
+      setTimeout(fetchNotifications, 500); // refresh notification bell
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to update status');
     } finally { setSaving(false); }
