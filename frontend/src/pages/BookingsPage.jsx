@@ -55,6 +55,61 @@ const STATUS_ICONS  = { PENDING:'⏳', APPROVED:'✅', REJECTED:'❌', CANCELLED
 
 const emptyForm = { resourceId:'', bookingDate:'', startTime:'', endTime:'', purpose:'' };
 
+/* ─── BookingForm - OUTSIDE main component to prevent remount on every keystroke ── */
+const BookingForm = ({ form, setForm, resources, onSubmit, onClose, title, submitLabel, saving }) => (
+  <Modal show onHide={onClose} size="lg">
+    <Modal.Header closeButton><Modal.Title>{title}</Modal.Title></Modal.Header>
+    <Form onSubmit={onSubmit}>
+      <Modal.Body>
+        <Form.Group className="mb-3">
+          <Form.Label>Resource <span className="text-danger">*</span></Form.Label>
+          <Form.Select required value={form.resourceId}
+            onChange={e => setForm(f => ({ ...f, resourceId: e.target.value }))}>
+            <option value="">Select a resource...</option>
+            {resources.map(r => (
+              <option key={r.id} value={r.id}>{r.name} — {r.location} (cap: {r.capacity})</option>
+            ))}
+          </Form.Select>
+        </Form.Group>
+        <Form.Group className="mb-3">
+          <Form.Label>Date <span className="text-danger">*</span></Form.Label>
+          <Form.Control type="date" required value={form.bookingDate}
+            min={new Date().toISOString().split('T')[0]}
+            onChange={e => setForm(f => ({ ...f, bookingDate: e.target.value }))} />
+        </Form.Group>
+        <div className="d-flex gap-3">
+          <Form.Group className="mb-3 flex-fill">
+            <Form.Label>Start Time <span className="text-danger">*</span></Form.Label>
+            <Form.Control type="time" required value={form.startTime}
+              onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))} />
+          </Form.Group>
+          <Form.Group className="mb-3 flex-fill">
+            <Form.Label>End Time <span className="text-danger">*</span></Form.Label>
+            <Form.Control type="time" required value={form.endTime}
+              onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))} />
+          </Form.Group>
+        </div>
+        <Form.Group>
+          <Form.Label>Purpose</Form.Label>
+          <Form.Control
+            as="textarea"
+            rows={3}
+            placeholder="Reason for booking..."
+            value={form.purpose}
+            onChange={e => setForm(f => ({ ...f, purpose: e.target.value }))}
+          />
+        </Form.Group>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" onClick={onClose}>Cancel</Button>
+        <Button type="submit" variant="primary" disabled={saving}>
+          {saving ? <Spinner size="sm" animation="border" /> : submitLabel}
+        </Button>
+      </Modal.Footer>
+    </Form>
+  </Modal>
+);
+
 /* ─── Component ──────────────────────────────────────────────────────────── */
 export default function BookingsPage() {
   const navigate  = useNavigate();
@@ -209,56 +264,6 @@ export default function BookingsPage() {
   const from = totalItems === 0 ? 0 : page * 10 + 1;
   const to   = Math.min((page + 1) * 10, totalItems);
 
-  const BookingForm = ({ onSubmit, title, submitLabel }) => (
-    <Modal show onHide={closeModal} size="lg">
-      <Modal.Header closeButton><Modal.Title>{title}</Modal.Title></Modal.Header>
-      <Form onSubmit={onSubmit}>
-        <Modal.Body>
-          <Form.Group className="mb-3">
-            <Form.Label>Resource <span className="text-danger">*</span></Form.Label>
-            <Form.Select required value={form.resourceId}
-              onChange={e => setForm(f => ({ ...f, resourceId: e.target.value }))}>
-              <option value="">Select a resource...</option>
-              {resources.map(r => (
-                <option key={r.id} value={r.id}>{r.name} — {r.location} (cap: {r.capacity})</option>
-              ))}
-            </Form.Select>
-          </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Date <span className="text-danger">*</span></Form.Label>
-            <Form.Control type="date" required value={form.bookingDate}
-              min={new Date().toISOString().split('T')[0]}
-              onChange={e => setForm(f => ({ ...f, bookingDate: e.target.value }))} />
-          </Form.Group>
-          <div className="d-flex gap-3">
-            <Form.Group className="mb-3 flex-fill">
-              <Form.Label>Start Time <span className="text-danger">*</span></Form.Label>
-              <Form.Control type="time" required value={form.startTime}
-                onChange={e => setForm(f => ({ ...f, startTime: e.target.value }))} />
-            </Form.Group>
-            <Form.Group className="mb-3 flex-fill">
-              <Form.Label>End Time <span className="text-danger">*</span></Form.Label>
-              <Form.Control type="time" required value={form.endTime}
-                onChange={e => setForm(f => ({ ...f, endTime: e.target.value }))} />
-            </Form.Group>
-          </div>
-          <Form.Group>
-            <Form.Label>Purpose</Form.Label>
-            <Form.Control as="textarea" rows={2} placeholder="Reason for booking..."
-              value={form.purpose}
-              onChange={e => setForm(f => ({ ...f, purpose: e.target.value }))} />
-          </Form.Group>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={closeModal}>Cancel</Button>
-          <Button type="submit" variant="primary" disabled={saving}>
-            {saving ? <Spinner size="sm" animation="border" /> : submitLabel}
-          </Button>
-        </Modal.Footer>
-      </Form>
-    </Modal>
-  );
-
   /* ─── Render ─────────────────────────────────────────────────────────── */
   return (
     <div className="bp-page">
@@ -381,12 +386,20 @@ export default function BookingsPage() {
 
       {/* ── Create Modal ── */}
       {modal === 'create' && (
-        <BookingForm onSubmit={handleCreate} title="New Booking Request" submitLabel="Submit Request" />
+        <BookingForm
+          form={form} setForm={setForm} resources={resources}
+          onSubmit={handleCreate} onClose={closeModal}
+          title="New Booking Request" submitLabel="Submit Request" saving={saving}
+        />
       )}
 
       {/* ── Edit Modal ── */}
       {modal === 'edit' && (
-        <BookingForm onSubmit={handleEdit} title="Edit Booking" submitLabel="Save Changes" />
+        <BookingForm
+          form={form} setForm={setForm} resources={resources}
+          onSubmit={handleEdit} onClose={closeModal}
+          title="Edit Booking" submitLabel="Save Changes" saving={saving}
+        />
       )}
 
       {/* ── View Modal ── */}
