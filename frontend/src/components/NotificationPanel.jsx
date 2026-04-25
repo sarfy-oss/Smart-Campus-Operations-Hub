@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Badge, Dropdown, DropdownButton, Alert } from 'react-bootstrap';
+import { Badge, DropdownButton } from 'react-bootstrap';
 import { useNotifications } from '../context/NotificationContext';
 
 const notificationPanelStyles = `
@@ -100,6 +100,7 @@ const notificationPanelStyles = `
   padding: 12px 16px;
   border-bottom: 1px solid #e9ecef;
   background-color: white;
+  cursor: pointer;
   transition: background-color 0.2s;
 }
 
@@ -107,18 +108,30 @@ const notificationPanelStyles = `
   background-color: #f8f9fa;
 }
 
+.notification-item.unread {
+  background-color: #eef4ff;
+}
+
+.notification-item.unread:hover {
+  background-color: #dde8ff;
+}
+
+.notification-item.notification-BOOKING_APPROVED,
 .notification-item.notification-success {
   border-left: 3px solid #198754;
 }
 
+.notification-item.notification-BOOKING_REJECTED,
 .notification-item.notification-error {
   border-left: 3px solid #dc3545;
 }
 
+.notification-item.notification-REMINDER,
 .notification-item.notification-warning {
   border-left: 3px solid #ffc107;
 }
 
+.notification-item.notification-SYSTEM,
 .notification-item.notification-info {
   border-left: 3px solid #0d6efd;
 }
@@ -147,19 +160,23 @@ const notificationPanelStyles = `
   color: white;
 }
 
+.notification-icon.icon-BOOKING_APPROVED,
 .notification-icon.icon-success {
   background-color: #198754;
 }
 
+.notification-icon.icon-BOOKING_REJECTED,
 .notification-icon.icon-error {
   background-color: #dc3545;
 }
 
+.notification-icon.icon-REMINDER,
 .notification-icon.icon-warning {
   background-color: #ffc107;
   color: #333;
 }
 
+.notification-icon.icon-SYSTEM,
 .notification-icon.icon-info {
   background-color: #0d6efd;
 }
@@ -209,58 +226,36 @@ const notificationPanelStyles = `
 }
 `;
 
-/**
- * Notification Panel Component
- * Displays recent notifications in a dropdown panel
- */
+const getIcon = (type) => {
+  switch (type) {
+    case 'BOOKING_APPROVED':
+    case 'success': return '✓';
+    case 'BOOKING_REJECTED':
+    case 'error': return '✕';
+    case 'REMINDER':
+    case 'warning': return '⚠';
+    default: return 'ℹ';
+  }
+};
+
+const formatTime = (timestamp) => {
+  const now = new Date();
+  const diff = now - new Date(timestamp);
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+};
+
 const NotificationPanel = () => {
-  const { notifications, removeNotification, clearNotifications } =
+  const { notifications, unreadCount, markAsRead, markAllAsRead, removeNotification } =
     useNotifications();
   const [show, setShow] = useState(false);
 
-  const getIcon = (type) => {
-    switch (type) {
-      case 'success':
-        return '✓';
-      case 'error':
-        return '✕';
-      case 'warning':
-        return '⚠';
-      case 'info':
-        return 'ℹ';
-      default:
-        return '•';
-    }
-  };
-
-  const getBadgeColor = (type) => {
-    switch (type) {
-      case 'success':
-        return 'success';
-      case 'error':
-        return 'danger';
-      case 'warning':
-        return 'warning';
-      case 'info':
-        return 'info';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const formatTime = (timestamp) => {
-    const now = new Date();
-    const diff = now - timestamp;
-    const minutes = Math.floor(diff / 60000);
-
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes}m ago`;
-
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
+  const handleItemClick = (notif) => {
+    if (!notif.read) markAsRead(notif.id);
   };
 
   return (
@@ -271,9 +266,9 @@ const NotificationPanel = () => {
         title={
           <>
             <span>🔔</span>
-            {notifications.length > 0 && (
+            {unreadCount > 0 && (
               <Badge bg="danger" className="notification-badge">
-                {notifications.length > 9 ? '9+' : notifications.length}
+                {unreadCount > 9 ? '9+' : unreadCount}
               </Badge>
             )}
           </>
@@ -284,16 +279,12 @@ const NotificationPanel = () => {
       >
         <div className="notification-menu">
           <div className="notification-header">
-            <span className="notification-title">Notifications</span>
-            {notifications.length > 0 && (
-              <button
-                onClick={() => {
-                  clearNotifications();
-                  setShow(false);
-                }}
-                className="clear-btn"
-              >
-                Clear All
+            <span className="notification-title">
+              Notifications {unreadCount > 0 && `(${unreadCount} unread)`}
+            </span>
+            {unreadCount > 0 && (
+              <button onClick={() => markAllAsRead()} className="clear-btn">
+                Mark all read
               </button>
             )}
           </div>
@@ -307,7 +298,8 @@ const NotificationPanel = () => {
               notifications.map((notif) => (
                 <div
                   key={notif.id}
-                  className={`notification-item notification-${notif.type}`}
+                  className={`notification-item notification-${notif.type} ${!notif.read ? 'unread' : ''}`}
+                  onClick={() => handleItemClick(notif)}
                 >
                   <div className="notification-content">
                     <div className="notification-header-item">
@@ -315,13 +307,16 @@ const NotificationPanel = () => {
                         {getIcon(notif.type)}
                       </span>
                       <span className="notification-time">
-                        {formatTime(notif.timestamp)}
+                        {formatTime(notif.createdAt)}
                       </span>
+                      {!notif.read && (
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#0d6efd', display: 'inline-block' }} />
+                      )}
                     </div>
                     <p className="notification-message">{notif.message}</p>
                   </div>
                   <button
-                    onClick={() => removeNotification(notif.id)}
+                    onClick={(e) => { e.stopPropagation(); removeNotification(notif.id); }}
                     className="notification-close"
                   >
                     ✕

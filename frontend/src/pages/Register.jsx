@@ -1,7 +1,14 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { authAPI } from '../services/api';
+import GoogleSignInButton from '../components/GoogleSignInButton';
+import { fetchCurrentUser, setUserProfile } from '../store/userSlice';
+
+const AUTH_DEBUG_ENABLED =
+  process.env.NODE_ENV !== 'production' ||
+  process.env.REACT_APP_AUTH_DEBUG === 'true';
 
 const registerStyles = String.raw`
 * {
@@ -299,6 +306,53 @@ const registerStyles = String.raw`
   animation: spin 0.8s linear infinite;
 }
 
+.google-section {
+  margin-bottom: 25px;
+}
+
+.google-divider {
+  position: relative;
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.google-divider::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  border-top: 1px solid #e5e7eb;
+  transform: translateY(-50%);
+}
+
+.google-divider span {
+  position: relative;
+  background: #fff;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  padding: 0 12px;
+}
+
+.google-note {
+  margin: 0 0 12px 0;
+  color: #4b5563;
+  font-size: 13px;
+}
+
+.google-note-error {
+  color: #b91c1c;
+}
+
+.google-loading {
+  margin: 0 0 12px 0;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .signin-section {
   text-align: center;
   padding-top: 20px;
@@ -398,6 +452,8 @@ const registerStyles = String.raw`
  */
 const Register = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const isAdminRole = (role) => String(role || '').toUpperCase() === 'ADMIN';
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -405,6 +461,7 @@ const Register = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -459,6 +516,61 @@ const Register = () => {
       setLoading(false);
     }
   };
+
+  const handleGoogleRegisterOrLogin = useCallback(async (idToken) => {
+    setError('');
+    setGoogleLoading(true);
+
+    try {
+      if (AUTH_DEBUG_ENABLED) {
+        // eslint-disable-next-line no-console
+        console.log('[google] credential received (register page)', {
+          hasCredential: !!idToken,
+          length: idToken?.length || 0,
+        });
+      }
+
+      const profile = await authAPI.loginWithGoogle(idToken);
+      const savedProfile = authAPI.getProfile();
+      if (!savedProfile?.token) {
+        throw new Error('Authentication state was not saved after Google login');
+      }
+      dispatch(setUserProfile(savedProfile));
+      dispatch(fetchCurrentUser());
+
+      toast.success(`Signed in as ${profile.username} (${profile.role})`);
+      const targetRoute = isAdminRole(profile.role) ? '/dashboard' : '/resources';
+      if (AUTH_DEBUG_ENABLED) {
+        // eslint-disable-next-line no-console
+        console.log('[google] navigating to', targetRoute);
+      }
+      navigate(targetRoute, { replace: true });
+    } catch (err) {
+      if (AUTH_DEBUG_ENABLED) {
+        // eslint-disable-next-line no-console
+        console.error('[google] login flow failed (register page)', {
+          message: err?.message,
+          status: err?.response?.status,
+          data: err?.response?.data,
+        });
+      }
+
+      if (!err.response && err.message) {
+        setError(err.message);
+      } else if (!err.response) {
+        setError('Cannot connect to backend. Make sure API is running.');
+      } else {
+        const apiMessage = err.response.data?.message;
+        setError(apiMessage || 'Google sign-in failed. Please try again.');
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  }, [dispatch, navigate]);
+
+  const handleGoogleError = useCallback((message) => {
+    setError(message || 'Google sign-in failed. Please try again.');
+  }, []);
 
   return (
     <div className="auth-container">
@@ -544,7 +656,7 @@ const Register = () => {
                 />
               </div>
 
-              <button type="submit" className="register-button" disabled={loading}>
+              <button type="submit" className="register-button" disabled={loading || googleLoading}>
                 {loading ? (
                   <>
                     <span className="button-spinner"></span>
@@ -555,6 +667,17 @@ const Register = () => {
                 )}
               </button>
             </form>
+
+            <div className="google-section">
+              <div className="google-divider"><span>OR</span></div>
+              <p className="google-note">Use your Google account to continue.</p>
+              {googleLoading && <p className="google-loading">Signing in with Google...</p>}
+              <GoogleSignInButton
+                onSuccess={handleGoogleRegisterOrLogin}
+                onError={handleGoogleError}
+                buttonText="signup_with"
+              />
+            </div>
 
             <div className="signin-section">
               <p className="signin-text">Already have an account?</p>

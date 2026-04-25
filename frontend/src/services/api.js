@@ -1,10 +1,13 @@
 import axios from 'axios';
 
-// Base configuration for API calls
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
 const AUTH_STORAGE_KEY = 'auth_profile';
+const LEGACY_TOKEN_KEY = 'token';
+const LEGACY_USER_KEY = 'user';
+const AUTH_DEBUG_ENABLED =
+  process.env.NODE_ENV !== 'production' ||
+  process.env.REACT_APP_AUTH_DEBUG === 'true';
 
-// Create Axios instance with base configuration
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
@@ -13,52 +16,42 @@ const apiClient = axios.create({
   },
 });
 
-// Add request interceptor to include authentication if needed
+const PUBLIC_AUTH_PATHS = new Set([
+  '/auth/login',
+  '/auth/register',
+  '/auth/student/google',
+]);
+
+const isPublicAuthRequest = (url) => {
+  if (!url) return false;
+
+  // Handles both relative paths ('/auth/login') and absolute URLs.
+  const normalizedUrl = String(url);
+  for (const path of PUBLIC_AUTH_PATHS) {
+    if (normalizedUrl === path || normalizedUrl.endsWith(path)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+// Inject JWT Bearer token on every request
 apiClient.interceptors.request.use(
   (config) => {
-    // Add credentials if stored in localStorage
-    const authProfileRaw = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (authProfileRaw) {
-      const profile = JSON.parse(authProfileRaw);
-      const username = profile?.username;
-      const password = profile?.password;
-
-      if (username && password) {
-        config.auth = {
-          username,
-          password,
-        };
-      }
+    if (isPublicAuthRequest(config?.url)) {
+      return config;
     }
 
+    const profile = getAuthProfile();
+    if (profile?.token) {
+      config.headers['Authorization'] = `Bearer ${profile.token}`;
+    }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-const clearAuthProfile = () => {
-  localStorage.removeItem(AUTH_STORAGE_KEY);
-};
-
-const saveAuthProfile = (profile) => {
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(profile));
-};
-
-const getAuthProfile = () => {
-  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw);
-  } catch (_e) {
-    clearAuthProfile();
-    return null;
-  }
-};
-
-// Add response interceptor to handle errors globally
+// Redirect to login on 401
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -72,163 +65,214 @@ apiClient.interceptors.response.use(
   }
 );
 
-/**
- * Resource API Service
- * Contains all API calls for resource management
- */
-export const resourceAPI = {
-  /**
-   * Get all resources with pagination
-   */
-  getAllResources: (page = 0, size = 10, sort = 'id,desc') => {
-    return apiClient.get('/resources', {
-      params: { page, size, sort },
-    });
-  },
+const clearAuthProfile = () => {
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+  localStorage.removeItem(LEGACY_TOKEN_KEY);
+  localStorage.removeItem(LEGACY_USER_KEY);
+};
 
-  /**
-   * Get single resource by ID
-   */
-  getResourceById: (id) => {
-    return apiClient.get(`/resources/${id}`);
-  },
+const saveAuthProfile = (profile) => {
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(profile));
 
-  /**
-   * Create new resource
-   */
-  createResource: (resourceData) => {
-    return apiClient.post('/resources', resourceData);
-  },
+  // Keep legacy keys for any older guards/components that still read them directly.
+  if (profile?.token) {
+    localStorage.setItem(LEGACY_TOKEN_KEY, profile.token);
+  }
+  localStorage.setItem(
+    LEGACY_USER_KEY,
+    JSON.stringify({
+      id: profile?.id || '',
+      username: profile?.username || '',
+      email: profile?.email || '',
+      role: profile?.role || '',
+    })
+  );
+};
 
-  /**
-   * Update existing resource
-   */
-  updateResource: (id, resourceData) => {
-    return apiClient.put(`/resources/${id}`, resourceData);
-  },
-
-  /**
-   * Delete resource
-   */
-  deleteResource: (id) => {
-    return apiClient.delete(`/resources/${id}`);
-  },
-
-  /**
-   * Search resources by keyword
-   */
-  searchResources: (keyword, page = 0, size = 10) => {
-    return apiClient.get('/resources/search/keyword', {
-      params: { keyword, page, size },
-    });
-  },
-
-  /**
-   * Filter resources by type
-   */
-  filterByType: (type, page = 0, size = 10) => {
-    return apiClient.get('/resources/filter/type', {
-      params: { type, page, size },
-    });
-  },
-
-  /**
-   * Filter resources by status
-   */
-  filterByStatus: (status, page = 0, size = 10) => {
-    return apiClient.get('/resources/filter/status', {
-      params: { status, page, size },
-    });
-  },
-
-  /**
-   * Filter resources by location
-   */
-  filterByLocation: (location, page = 0, size = 10) => {
-    return apiClient.get('/resources/filter/location', {
-      params: { location, page, size },
-    });
-  },
-
-  /**
-   * Filter resources by capacity
-   */
-  filterByCapacity: (capacity, page = 0, size = 10) => {
-    return apiClient.get('/resources/filter/capacity', {
-      params: { capacity, page, size },
-    });
-  },
-
-  /**
-   * Filter resources by type and capacity
-   */
-  filterByTypeAndCapacity: (type, capacity, page = 0, size = 10) => {
-    return apiClient.get('/resources/filter/type-capacity', {
-      params: { type, capacity, page, size },
-    });
-  },
-
-  /**
-   * Get available resources
-   */
-  getAvailableResources: () => {
-    return apiClient.get('/resources/available/list');
-  },
+const getAuthProfile = () => {
+  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    clearAuthProfile();
+    return null;
+  }
 };
 
 /**
- * Authentication service
+ * Resource API Service
+ */
+export const resourceAPI = {
+  getAllResources: (page = 0, size = 10, sort = 'id,desc') =>
+    apiClient.get('/resources', { params: { page, size, sort } }),
+
+  getResourceById: (id) => apiClient.get(`/resources/${id}`),
+
+  createResource: (resourceData) => apiClient.post('/resources', resourceData),
+
+  updateResource: (id, resourceData) => apiClient.put(`/resources/${id}`, resourceData),
+
+  deleteResource: (id) => apiClient.delete(`/resources/${id}`),
+
+  searchResources: (keyword, page = 0, size = 10) =>
+    apiClient.get('/resources/search/keyword', { params: { keyword, page, size } }),
+
+  filterByType: (type, page = 0, size = 10) =>
+    apiClient.get('/resources/filter/type', { params: { type, page, size } }),
+
+  filterByStatus: (status, page = 0, size = 10) =>
+    apiClient.get('/resources/filter/status', { params: { status, page, size } }),
+
+  filterByLocation: (location, page = 0, size = 10) =>
+    apiClient.get('/resources/filter/location', { params: { location, page, size } }),
+
+  filterByCapacity: (capacity, page = 0, size = 10) =>
+    apiClient.get('/resources/filter/capacity', { params: { capacity, page, size } }),
+
+  filterByTypeAndCapacity: (type, capacity, page = 0, size = 10) =>
+    apiClient.get('/resources/filter/type-capacity', { params: { type, capacity, page, size } }),
+
+  getAvailableResources: () => apiClient.get('/resources/available/list'),
+};
+
+/**
+ * Authentication API Service
  */
 export const authAPI = {
-  /**
-   * Register new user account (USER role)
-   */
-  register: (username, password) => {
-    return apiClient.post('/auth/register', { username, password });
-  },
-
-  /**
-   * Login using Basic auth and store profile
-   */
   login: async (username, password) => {
-    const response = await apiClient.get('/auth/me', {
-      auth: { username, password },
-      headers: {
-        'X-Auth-Check': 'login',
-      },
-    });
-
-    const roles = response.data?.roles || [];
-    saveAuthProfile({ username, password, roles });
-
+    const response = await apiClient.post('/auth/login', { username, password });
+    const { token, username: uname, role } = response.data;
+    if (!token) {
+      throw new Error('Backend login response did not include a token');
+    }
+    saveAuthProfile({ token, username: uname, role });
     return response.data;
   },
 
-  /**
-   * Clear credentials
-   */
-  logout: () => {
-    clearAuthProfile();
+  loginWithGoogle: async (token) => {
+    if (!token) {
+      throw new Error('Google credential token is missing');
+    }
+    if (AUTH_DEBUG_ENABLED) {
+      // eslint-disable-next-line no-console
+      console.log('[auth] sending Google token to backend', {
+        endpoint: `${API_BASE_URL}/auth/student/google`,
+        tokenLength: token.length,
+      });
+    }
+    const response = await apiClient.post('/auth/student/google', { token });
+    const { token: appToken, username: uname, role } = response.data;
+    if (!appToken) {
+      throw new Error('Backend Google login response did not include a token');
+    }
+    saveAuthProfile({ token: appToken, username: uname, role });
+    if (AUTH_DEBUG_ENABLED) {
+      // Debug only: helps confirm storage + response shape after Google auth.
+      // eslint-disable-next-line no-console
+      console.log('[auth] Google login success', {
+        status: response.status,
+        username: uname,
+        role,
+        savedProfile: getAuthProfile(),
+      });
+    }
+    return response.data;
   },
 
-  /**
-   * Check if user is authenticated
-   */
-  isAuthenticated: () => {
-    const profile = getAuthProfile();
-    return !!(profile?.username && profile?.password);
+  register: (username, password) =>
+    apiClient.post('/auth/register', { username, password }),
+
+  logout: () => clearAuthProfile(),
+
+  setProfile: (profile) => {
+    const merged = {
+      ...(getAuthProfile() || {}),
+      ...(profile || {}),
+    };
+    saveAuthProfile(merged);
+    return merged;
   },
+
+  isAuthenticated: () => !!getAuthProfile()?.token,
 
   getProfile: () => getAuthProfile(),
 
-  hasRole: (role) => {
-    const profile = getAuthProfile();
-    return !!profile?.roles?.includes(role);
+  getCurrentUser: () => apiClient.get('/auth/me'),
+
+  updateMyProfile: async (data) => {
+    const response = await apiClient.put('/auth/me', data);
+    const mergedProfile = authAPI.setProfile(response.data);
+    return mergedProfile;
   },
 
-  isAdmin: () => {
-    return authAPI.hasRole('ADMIN');
+  changeMyPassword: (data) => apiClient.put('/auth/me/password', data),
+
+  deleteMyAccount: () => apiClient.delete('/auth/me'),
+
+  hasRole: (role) => {
+    const p = getAuthProfile();
+    if (!p) return false;
+
+    const expected = String(role || '').toUpperCase();
+    const current = String(p.role || '').toUpperCase();
+    if (current === expected) return true;
+
+    if (Array.isArray(p.roles)) {
+      return p.roles.some((item) => String(item || '').toUpperCase() === expected);
+    }
+
+    return false;
   },
+
+  isAdmin: () => authAPI.hasRole('ADMIN'),
+
+  // User management (admin only)
+  getUsers: () => apiClient.get('/auth/users'),
+
+  createUser: (data) => apiClient.post('/auth/users', data),
+
+  updateUser: (id, data) => apiClient.put(`/auth/users/${id}`, data),
+
+  deleteUser: (id) => apiClient.delete(`/auth/users/${id}`),
+};
+
+/**
+ * Notification API Service
+ */
+export const notificationAPI = {
+  getAll: () => apiClient.get('/notifications'),
+
+  markRead: (id) => apiClient.put(`/notifications/${id}/read`),
+
+  markAllRead: () => apiClient.put('/notifications/read-all'),
+
+  create: (notification) => apiClient.post('/notifications', notification),
+
+  delete: (id) => apiClient.delete(`/notifications/${id}`),
+};
+
+/**
+ * Booking API Service
+ */
+export const bookingAPI = {
+  createBooking: (data) => apiClient.post('/bookings', data),
+
+  getMyBookings: (page = 0, size = 10) =>
+    apiClient.get('/bookings/my', { params: { page, size } }),
+
+  getAllBookings: (page = 0, size = 10, status = null) =>
+    apiClient.get('/bookings', { params: { page, size, ...(status && { status }) } }),
+
+  getBookingById: (id) => apiClient.get(`/bookings/${id}`),
+
+  updateBooking: (id, data) => apiClient.put(`/bookings/${id}`, data),
+
+  updateBookingStatus: (id, data) => apiClient.put(`/bookings/${id}/status`, data),
+
+  cancelBooking: (id) => apiClient.put(`/bookings/${id}/cancel`),
+
+  deleteBooking: (id) => apiClient.delete(`/bookings/${id}`),
 };
 
 export default apiClient;

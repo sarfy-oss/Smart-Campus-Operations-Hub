@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { Form, Button, Spinner, Alert } from 'react-bootstrap';
 import { useNavigate, useParams } from 'react-router-dom';
-import { authAPI, resourceAPI } from '../services/api';
+import OperationsSidebar from './OperationsSidebar';
+import TopbarUserMenu from './TopbarUserMenu';
+import { resourceAPI } from '../services/api';
 import { validateResource } from '../utils/helpers';
 import { useNotifications } from '../context/NotificationContext';
 import BrandLogo from './BrandLogo';
@@ -294,7 +296,6 @@ const ResourceForm = () => {
   const { id } = useParams();
   const isEditMode = !!id;
   const { addNotification } = useNotifications();
-  const profile = authAPI.getProfile();
 
   const [loading, setLoading] = useState(isEditMode);
   const [submitting, setSubmitting] = useState(false);
@@ -352,12 +353,6 @@ const ResourceForm = () => {
 
     loadResource();
   }, [id, isEditMode, navigate]);
-
-  const handleLogout = () => {
-    authAPI.logout();
-    toast.success('Logged out successfully');
-    navigate('/login');
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -464,7 +459,8 @@ const ResourceForm = () => {
   return (
     <div className="rf-page">
       <style>{resourceFormStyles}</style>
-      <aside className="rf-sidebar">
+      <OperationsSidebar activeKey="resources" />
+      <aside className="rf-sidebar" style={{ display: 'none' }}>
         <div className="rf-brand">
           <BrandLogo />
         </div>
@@ -491,12 +487,10 @@ const ResourceForm = () => {
       <section className="rf-main">
         <header className="rf-topbar">
           <h1>{isEditMode ? 'Edit Resource' : 'Add Resource'}</h1>
-          <div className="rf-user-menu">
-            <span>{profile?.username || 'Account'}</span>
-            <button type="button" onClick={handleLogout} className="rf-logout-btn">
-              Logout
-            </button>
-          </div>
+          <TopbarUserMenu
+            containerClassName="rf-user-menu"
+            logoutButtonClassName="rf-logout-btn"
+          />
         </header>
 
         <div className="rf-content">

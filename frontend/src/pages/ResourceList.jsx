@@ -1,7 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, Form, Modal, Spinner } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import OperationsSidebar from '../components/OperationsSidebar';
+import TopbarUserMenu from '../components/TopbarUserMenu';
 import { authAPI, resourceAPI } from '../services/api';
 import { useNotifications } from '../context/NotificationContext';
 import BrandLogo from '../components/BrandLogo';
@@ -351,7 +353,6 @@ const resourceListStyles = String.raw`
 const ResourceList = () => {
   const navigate = useNavigate();
   const isAdmin = authAPI.isAdmin();
-  const profile = authAPI.getProfile();
   const { addNotification } = useNotifications();
 
   const [resources, setResources] = useState([]);
@@ -453,14 +454,6 @@ const ResourceList = () => {
     }
   };
 
-  const handleLogout = () => {
-    authAPI.logout();
-    toast.success('Logged out successfully');
-    navigate('/login');
-  };
-
-  const userLabel = useMemo(() => profile?.username || 'Account', [profile]);
-
   const getResourceImageSrc = (resource) => {
     const value = (resource?.imageUrl || '').trim();
     if (!value) {
@@ -480,7 +473,8 @@ const ResourceList = () => {
   return (
     <div className="rm-page">
       <style>{resourceListStyles}</style>
-      <aside className="rm-sidebar">
+      <OperationsSidebar activeKey="resources" />
+      <aside className="rm-sidebar" style={{ display: 'none' }}>
         <div className="rm-brand">
           <BrandLogo />
         </div>
@@ -492,13 +486,13 @@ const ResourceList = () => {
           <button type="button" className="rm-nav-item rm-nav-item-active">
             <span>▣</span> Resources
           </button>
-          <button type="button" className="rm-nav-item">
+          <button type="button" className="rm-nav-item" onClick={() => navigate('/bookings')}>
             <span>▤</span> Bookings
           </button>
           <button type="button" className="rm-nav-item">
             <span>◌</span> Issues
           </button>
-          <button type="button" className="rm-nav-item">
+          <button type="button" className="rm-nav-item" onClick={() => navigate('/users')}>
             <span>◉</span> Users
           </button>
         </nav>
@@ -507,12 +501,10 @@ const ResourceList = () => {
       <section className="rm-main">
         <header className="rm-topbar">
           <h1>Facilities Resource Management</h1>
-          <div className="rm-user-menu">
-            <span>{userLabel}</span>
-            <button type="button" onClick={handleLogout} className="rm-logout-btn">
-              Logout
-            </button>
-          </div>
+          <TopbarUserMenu
+            containerClassName="rm-user-menu"
+            logoutButtonClassName="rm-logout-btn"
+          />
         </header>
 
         <div className="rm-content">
