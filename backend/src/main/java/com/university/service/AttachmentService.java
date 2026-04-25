@@ -1,5 +1,14 @@
 package com.university.service;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.university.dto.TicketAttachmentResponse;
@@ -9,16 +18,9 @@ import com.university.exception.InvalidFileException;
 import com.university.exception.MaxAttachmentsExceededException;
 import com.university.repository.TicketAttachmentRepository;
 import com.university.repository.TicketRepository;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Service for managing ticket attachments.

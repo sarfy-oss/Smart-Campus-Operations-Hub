@@ -18,6 +18,10 @@ import UserManagement from './pages/UserManagement';
 import UserRoleManagement from './pages/UserRoleManagement';
 import ProfileManagement from './pages/ProfileManagement';
 import BookingsPage from './pages/BookingsPage';
+import CreateTicketPage from './pages/CreateTicketPage';
+import TicketsPage from './pages/TicketsPage';
+import TicketDetailsPage from './pages/TicketDetailsPage';
+import AdminTicketsPage from './pages/AdminTicketsPage';
 import { authAPI } from './services/api';
 import { NotificationProvider } from './context/NotificationContext';
 import { clearUserProfile, fetchCurrentUser, setUserProfile } from './store/userSlice';
@@ -60,7 +64,7 @@ function App() {
       dispatch(fetchCurrentUser());
     }, [dispatch]);
 
-    const hideHeader = ['/resources', '/users', '/dashboard', '/bookings', '/issues', '/profile', '/my-bookings']
+    const hideHeader = ['/resources', '/users', '/dashboard', '/bookings', '/issues', '/profile', '/my-bookings', '/tickets']
       .some((prefix) => location.pathname.startsWith(prefix));
 
     return (
@@ -81,6 +85,11 @@ function App() {
             <Route path="/users/roles" element={<ProtectedRoute adminOnly><UserRoleManagement /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfileManagement /></ProtectedRoute>} />
             <Route path="/my-bookings" element={<ProtectedRoute><BookingsPage /></ProtectedRoute>} />
+            {/* Module C - Maintenance & Incident Ticketing Routes */}
+            <Route path="/tickets/create" element={<ProtectedRoute><CreateTicketPage /></ProtectedRoute>} />
+            <Route path="/tickets/:id" element={<ProtectedRoute><TicketDetailsPage /></ProtectedRoute>} />
+            <Route path="/tickets" element={<ProtectedRoute><TicketsPage /></ProtectedRoute>} />
+            <Route path="/admin/tickets" element={<ProtectedRoute adminOnly><AdminTicketsPage /></ProtectedRoute>} />
             <Route path="/" element={<HomeRoute />} />
           </Routes>
         </main>

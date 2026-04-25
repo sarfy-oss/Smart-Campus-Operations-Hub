@@ -1,0 +1,176 @@
+.create-ticket-page {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+  padding: 2rem 0;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.page-header h1 {
+  font-weight: 800;
+  color: #333;
+  margin-bottom: 0.5rem;
+  font-size: 2rem;
+}
+
+.page-header p {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* Right Sidebar */
+.ticket-tips-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.tips-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-top: 3px solid #007bff;
+}
+
+.tips-card.sla-card {
+  border-top-color: #28a745;
+}
+
+.tips-card.categories-card {
+  border-top-color: #ffc107;
+}
+
+.tips-card.user-card {
+  border-top-color: #17a2b8;
+  background: #f9f9f9;
+}
+
+.tips-title {
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tips-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tips-list li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.tips-list li:last-child {
+  border-bottom: none;
+}
+
+.tips-list strong {
+  color: #007bff;
+}
+
+/* SLA Items */
+.sla-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.9rem;
+}
+
+.sla-item:last-child {
+  border-bottom: none;
+}
+
+.sla-priority {
+  font-weight: 700;
+}
+
+.sla-time {
+  background: #f0f0f0;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* Category Chips */
+.category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip {
+  display: inline-block;
+  background: #e7f3ff;
+  color: #0056b3;
+  padding: 0.5rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid #b3d9ff;
+  transition: all 0.2s ease;
+}
+
+.chip:hover {
+  background: #b3d9ff;
+  color: #003d82;
+  transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .create-ticket-page {
+    padding: 1rem 0;
+  }
+
+  .ticket-tips-sidebar {
+    margin-top: 2rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .create-ticket-page {
+    padding: 1rem 0;
+  }
+
+  .page-header {
+    margin-bottom: 1rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .ticket-tips-sidebar {
+    gap: 1rem;
+  }
+
+  .tips-card {
+    padding: 1rem;
+  }
+
+  .category-chips {
+    gap: 0.35rem;
+  }
+
+  .chip {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.75rem;
+  }
+}

@@ -1,0 +1,24 @@
+.ticket-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: transform 0.2s ease;
+}
+
+.ticket-status-badge:hover {
+  transform: scale(1.05);
+}
+
+.status-icon {
+  font-size: 0.75rem;
+  display: inline-block;
+}
+
+.status-badge {
+  border: none;
+  font-size: 0.8rem !important;
+}
