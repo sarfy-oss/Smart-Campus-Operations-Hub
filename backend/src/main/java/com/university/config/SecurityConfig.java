@@ -54,6 +54,8 @@ public class SecurityConfig {
                 .requestMatchers("/auth/login", "/auth/register", "/auth/student/google", "/auth/student/google/**").permitAll()
 
                 // Admin-only user management
+                .requestMatchers(HttpMethod.GET, "/auth/users").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/auth/users").hasRole("ADMIN")
                 .requestMatchers("/auth/users/**").hasRole("ADMIN")
 
                 // Authenticated user profile
