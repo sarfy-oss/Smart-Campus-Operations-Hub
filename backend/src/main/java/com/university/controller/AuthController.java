@@ -23,6 +23,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -115,11 +116,11 @@ public class AuthController {
 
     @GetMapping("/me")
     public ResponseEntity<Map<String, Object>> me(Authentication authentication) {
-        User user = userRepository.findByUsername(authentication.getName()).orElseThrow();
+        User user = resolveCurrentUser(authentication);
         return ResponseEntity.ok(Map.of(
-                "id", user.getId(),
-                "username", user.getUsername(),
-                "role", user.getRole(),
+                "id", safeId(user),
+                "username", safeUsername(user),
+                "role", safeRole(user),
                 "email", safeEmail(user)
         ));
     }
@@ -129,7 +130,7 @@ public class AuthController {
             Authentication authentication,
             @Valid @RequestBody UpdateProfileRequestDTO request
     ) {
-        User user = userRepository.findByUsername(authentication.getName()).orElseThrow();
+        User user = resolveCurrentUser(authentication);
         String normalizedUsername = request.getUsername().trim().toLowerCase(Locale.ROOT);
 
         if (!normalizedUsername.equals(user.getUsername()) && userRepository.existsByUsername(normalizedUsername)) {
@@ -153,10 +154,10 @@ public class AuthController {
         String refreshedToken = jwtUtil.generateToken(updatedUserDetails);
 
         return ResponseEntity.ok(Map.of(
-                "id", saved.getId(),
+                "id", safeId(saved),
                 "token", refreshedToken,
-                "username", saved.getUsername(),
-                "role", saved.getRole(),
+                "username", safeUsername(saved),
+                "role", safeRole(saved),
                 "email", safeEmail(saved)
         ));
     }
@@ -166,9 +167,15 @@ public class AuthController {
             Authentication authentication,
             @Valid @RequestBody ChangePasswordRequestDTO request
     ) {
-        User user = userRepository.findByUsername(authentication.getName()).orElseThrow();
+        User user = resolveCurrentUser(authentication);
+        String storedPassword = user.getPassword();
 
-        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+        if (storedPassword == null || storedPassword.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Password changes are unavailable for this account"));
+        }
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), storedPassword)) {
             return ResponseEntity.badRequest()
                     .body(Map.of("message", "Current password is incorrect"));
         }
@@ -186,7 +193,7 @@ public class AuthController {
 
     @DeleteMapping("/me")
     public ResponseEntity<Map<String, String>> deleteMyAccount(Authentication authentication) {
-        User user = userRepository.findByUsername(authentication.getName()).orElseThrow();
+        User user = resolveCurrentUser(authentication);
         userRepository.deleteById(user.getId());
         return ResponseEntity.ok(Map.of("message", "Account deleted successfully"));
     }
@@ -310,5 +317,26 @@ public class AuthController {
 
     private String safeEmail(User user) {
         return user.getEmail() == null ? "" : user.getEmail();
+    }
+
+    private String safeId(User user) {
+        return user.getId() == null ? "" : user.getId();
+    }
+
+    private String safeUsername(User user) {
+        return user.getUsername() == null ? "" : user.getUsername();
+    }
+
+    private String safeRole(User user) {
+        return user.getRole() == null || user.getRole().isBlank() ? "USER" : user.getRole();
+    }
+
+    private User resolveCurrentUser(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null || authentication.getName().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication is required");
+        }
+
+        return userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Authenticated user was not found"));
     }
 }

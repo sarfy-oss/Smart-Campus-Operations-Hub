@@ -82,6 +82,7 @@ const profileStyles = String.raw`
   }
 }
 `;
+/*// Email validation regex */
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_STRENGTH_REGEX = /^(?=.*[A-Za-z])(?=.*\d).{6,}$/;
@@ -95,7 +96,7 @@ const extractApiError = (error, fallbackMessage) => {
 
 
 
-
+/* Extract API error message */
 
 const extractApiError = (error, fallbackMessage) => {
   const response = error?.response?.data;
@@ -113,6 +114,7 @@ const extractApiError = (error, fallbackMessage) => {
   return fallbackMessage;
 };
 
+/* Main Component */
 const ProfileManagement = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -130,14 +132,17 @@ const ProfileManagement = () => {
     newPassword: '',
     confirmNewPassword: '',
   });
+
+  /* password form state */
   const [passwordError, setPasswordError] = useState('');
   const [passwordSaving, setPasswordSaving] = useState(false);
 
+  /* Delete Account Modal State */
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
-
+/* Load user profile data */
   useEffect(() => {
     setProfileForm({
       username: currentUser?.username || '',
@@ -145,6 +150,7 @@ const ProfileManagement = () => {
     });
   }, [currentUser?.email, currentUser?.username]);
 
+  /* Display User  Information */
   const memberSinceLabel = useMemo(() => {
     if (!currentUser?.id) {
       return 'Profile loaded from your active session';
@@ -152,7 +158,7 @@ const ProfileManagement = () => {
 
     return `User ID: ${currentUser.id}`;
   }, [currentUser?.id]);
-
+/* Validate Form Inputs */
   const validateProfileForm = () => {
     const username = profileForm.username.trim();
     const email = profileForm.email.trim();
@@ -171,7 +177,7 @@ const ProfileManagement = () => {
 
     return '';
   };
-
+/* Validate Password Form */
   const validatePasswordForm = () => {
     if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmNewPassword) {
       return 'Please fill out all password fields.';
@@ -191,7 +197,7 @@ const ProfileManagement = () => {
 
     return '';
   };
-
+/* Handle Profile Update */
   const handleProfileSubmit = async (event) => {
     event.preventDefault();
     setProfileError('');

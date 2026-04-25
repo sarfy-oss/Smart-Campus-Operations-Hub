@@ -54,6 +54,8 @@ public class SecurityConfig {
                 .requestMatchers("/auth/login", "/auth/register", "/auth/student/google", "/auth/student/google/**").permitAll()
 
                 // Admin-only user management
+                .requestMatchers(HttpMethod.GET, "/auth/users").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/auth/users").hasRole("ADMIN")
                 .requestMatchers("/auth/users/**").hasRole("ADMIN")
 
                 // Authenticated user profile
@@ -71,13 +73,12 @@ public class SecurityConfig {
                 // Notifications for authenticated users
                 .requestMatchers("/notifications/**").authenticated()
 
-                // Bookings - admin-only endpoints first (more specific)
-                .requestMatchers(HttpMethod.GET, "/bookings").hasRole("ADMIN")
+                // Bookings - more specific paths FIRST
+                .requestMatchers(HttpMethod.GET, "/bookings/my").hasAnyRole("USER", "ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/bookings/*/status").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/bookings/*").hasRole("ADMIN")
-                // Bookings - authenticated users
+                .requestMatchers(HttpMethod.GET, "/bookings").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/bookings").hasAnyRole("USER", "ADMIN")
-                .requestMatchers(HttpMethod.GET, "/bookings/my").hasAnyRole("USER", "ADMIN")
                 .requestMatchers(HttpMethod.GET, "/bookings/**").hasAnyRole("USER", "ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/bookings/**").hasAnyRole("USER", "ADMIN")
 

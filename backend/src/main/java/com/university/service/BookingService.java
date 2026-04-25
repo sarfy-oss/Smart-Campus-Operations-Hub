@@ -4,6 +4,7 @@ import com.university.dto.BookingRequestDTO;
 import com.university.dto.BookingResponseDTO;
 import com.university.dto.BookingStatusUpdateDTO;
 import com.university.entity.Booking;
+import com.university.entity.NotificationType;
 import com.university.entity.Resource;
 import com.university.entity.enums.BookingStatus;
 import com.university.entity.enums.ResourceStatus;
@@ -11,6 +12,7 @@ import com.university.exception.ResourceNotFoundException;
 import com.university.exception.ResourceValidationException;
 import com.university.repository.BookingRepository;
 import com.university.repository.ResourceRepository;
+import com.university.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -29,6 +31,8 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final ResourceRepository resourceRepository;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
@@ -71,7 +75,15 @@ public class BookingService {
                 .status(BookingStatus.PENDING)
                 .build();
 
-        return toDTO(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+
+        // Notify the user - booking received
+        sendNotification(username,
+                "📋 Booking request submitted for \"" + resource.getName() + "\" on " + dto.getBookingDate()
+                + " (" + dto.getStartTime() + "–" + dto.getEndTime() + "). Awaiting admin approval.",
+                NotificationType.SYSTEM);
+
+        return toDTO(saved);
     }
 
     /** Get all bookings - admin */
@@ -113,7 +125,24 @@ public class BookingService {
         booking.setAdminNote(dto.getAdminNote());
         booking.setUpdatedAt(java.time.LocalDateTime.now());
 
-        return toDTO(bookingRepository.save(booking));
+        Booking updated = bookingRepository.save(booking);
+
+        // Notify the user about the decision
+        if (newStatus == BookingStatus.APPROVED) {
+            sendNotification(booking.getUsername(),
+                    "✅ Your booking for \"" + booking.getResourceName() + "\" on " + booking.getBookingDate()
+                    + " (" + booking.getStartTime().format(TIME_FMT) + "–" + booking.getEndTime().format(TIME_FMT) + ") has been APPROVED."
+                    + (dto.getAdminNote() != null && !dto.getAdminNote().isBlank() ? " Note: " + dto.getAdminNote() : ""),
+                    NotificationType.BOOKING_APPROVED);
+        } else if (newStatus == BookingStatus.REJECTED) {
+            sendNotification(booking.getUsername(),
+                    "❌ Your booking for \"" + booking.getResourceName() + "\" on " + booking.getBookingDate()
+                    + " (" + booking.getStartTime().format(TIME_FMT) + "–" + booking.getEndTime().format(TIME_FMT) + ") has been REJECTED."
+                    + (dto.getAdminNote() != null && !dto.getAdminNote().isBlank() ? " Reason: " + dto.getAdminNote() : ""),
+                    NotificationType.BOOKING_REJECTED);
+        }
+
+        return toDTO(updated);
     }
 
     /** User cancels their own booking */
@@ -130,7 +159,15 @@ public class BookingService {
         booking.setStatus(BookingStatus.CANCELLED);
         booking.setUpdatedAt(java.time.LocalDateTime.now());
 
-        return toDTO(bookingRepository.save(booking));
+        Booking cancelled = bookingRepository.save(booking);
+
+        // Notify the user
+        sendNotification(username,
+                "🚫 Your booking for \"" + booking.getResourceName() + "\" on " + booking.getBookingDate()
+                + " has been cancelled.",
+                NotificationType.SYSTEM);
+
+        return toDTO(cancelled);
     }
 
     /** User edits own PENDING booking */
@@ -188,6 +225,17 @@ public class BookingService {
     private Booking findBooking(String id) {
         return bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + id));
+    }
+
+    /** Send notification to user by username (looks up userId) */
+    private void sendNotification(String username, String message, NotificationType type) {
+        try {
+            userRepository.findByUsername(username).ifPresent(user ->
+                notificationService.createNotification(user.getId(), message, type)
+            );
+        } catch (Exception e) {
+            log.warn("Failed to send notification to user {}: {}", username, e.getMessage());
+        }
     }
 
     private BookingResponseDTO toDTO(Booking b) {
