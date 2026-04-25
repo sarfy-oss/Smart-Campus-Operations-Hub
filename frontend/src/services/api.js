@@ -259,7 +259,7 @@ export const bookingAPI = {
   createBooking: (data) => apiClient.post('/bookings', data),
 
   getMyBookings: (page = 0, size = 10) =>
-    apiClient.get('/bookings/my', { params: { page, size } }),
+    apiClient.get('/bookings/my', { params: { page, size }, timeout: 20000 }),
 
   getAllBookings: (page = 0, size = 10, status = null) =>
     apiClient.get('/bookings', { params: { page, size, ...(status && { status }) } }),

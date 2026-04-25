@@ -70,6 +70,7 @@ const resourceListStyles = String.raw`
 .rm-content {
   padding: 24px 28px;
   min-width: 0;
+  background: linear-gradient(120deg, #eef1f8 0%, #eceff6 52%, #e9edf5 100%);
 }
 
 .rm-actions-row {
@@ -105,83 +106,110 @@ const resourceListStyles = String.raw`
 .rm-stats-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
 .rm-stat-card {
-  background: linear-gradient(180deg, #f8faff 0%, #f3f6fc 100%);
-  border: 1px solid #dce3ef;
-  border-radius: 12px;
-  padding: 18px 18px 16px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  border: 1px solid #dde3ee;
+  border-radius: 14px;
+  padding: 14px 16px 12px;
+  box-shadow: 0 8px 18px rgba(46, 62, 91, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.75);
   position: relative;
   overflow: hidden;
+}
+
+.rm-stat-card::before {
+  content: '';
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  width: 88px;
+  height: 42px;
+  opacity: 0.4;
+  border-radius: 10px;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 7px,
+    rgba(255, 255, 255, 0.1) 7px,
+    rgba(255, 255, 255, 0.1) 12px
+  );
 }
 
 .rm-stat-card::after {
   content: '';
   position: absolute;
-  right: -28px;
-  bottom: -26px;
-  width: 140px;
-  height: 96px;
-  border-radius: 60% 40% 0 0;
-  opacity: 0.2;
+  right: -18px;
+  bottom: -22px;
+  width: 120px;
+  height: 64px;
+  border-radius: 34px 34px 0 0;
+  opacity: 0.35;
 }
 
 .rm-stat-card-total::after {
-  background: linear-gradient(45deg, rgba(63, 131, 248, 0.45), rgba(63, 131, 248, 0));
+  background: linear-gradient(45deg, rgba(76, 139, 240, 0.55), rgba(76, 139, 240, 0));
+}
+
+.rm-stat-card-total {
+  background: linear-gradient(160deg, #f7f9ff 0%, #f0f4ff 100%);
 }
 
 .rm-stat-card-available::after {
-  background: linear-gradient(45deg, rgba(52, 211, 153, 0.45), rgba(52, 211, 153, 0));
+  background: linear-gradient(45deg, rgba(106, 203, 154, 0.55), rgba(106, 203, 154, 0));
+}
+
+.rm-stat-card-available {
+  background: linear-gradient(160deg, #f8fffb 0%, #f1fbf6 100%);
 }
 
 .rm-stat-card-unavailable::after {
-  background: linear-gradient(45deg, rgba(251, 113, 133, 0.45), rgba(251, 113, 133, 0));
+  background: linear-gradient(45deg, rgba(244, 156, 169, 0.55), rgba(244, 156, 169, 0));
+}
+
+.rm-stat-card-unavailable {
+  background: linear-gradient(160deg, #fff9fb 0%, #fff1f5 100%);
 }
 
 .rm-stat-label {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-size: 13px;
+  gap: 7px;
+  margin-bottom: 6px;
+  font-size: 15px;
   font-weight: 700;
-  color: #2c3550;
+  color: #2f3a56;
 }
 
-.rm-stat-dot {
-  width: 14px;
-  height: 14px;
+.rm-stat-icon {
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
 }
 
-.rm-stat-dot::after {
-  content: '';
-  position: absolute;
-  inset: 4px;
-  background: #fff;
-  border-radius: 50%;
-  opacity: 0.85;
+.rm-icon-blue {
+  background: #4f8ef0;
+  color: #ffffff;
 }
 
-.rm-dot-blue {
-  background: #3b82f6;
+.rm-icon-green {
+  background: #5abf88;
+  color: #ffffff;
 }
 
-.rm-dot-green {
-  background: #22c55e;
-}
-
-.rm-dot-red {
-  background: #e11d48;
+.rm-icon-red {
+  background: #e7485f;
+  color: #ffffff;
 }
 
 .rm-stat-value {
   margin: 0;
-  font-size: 46px;
+  font-size: 52px;
   line-height: 1;
   font-weight: 800;
   letter-spacing: -0.03em;
@@ -200,18 +228,32 @@ const resourceListStyles = String.raw`
 }
 
 .rm-chart-card {
-  background: linear-gradient(180deg, #f8faff 0%, #f3f6fc 100%);
+  background: linear-gradient(180deg, #f8f9ff 0%, #f3f6fd 100%);
   border: 1px solid #dce3ef;
-  border-radius: 12px;
-  padding: 14px 16px 8px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  border-radius: 14px;
+  padding: 12px 14px 8px;
+  box-shadow: 0 8px 18px rgba(46, 62, 91, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  position: relative;
+  overflow: hidden;
+}
+
+.rm-chart-card::after {
+  content: '';
+  position: absolute;
+  right: -38px;
+  bottom: -30px;
+  width: 210px;
+  height: 86px;
+  border: 1px solid rgba(182, 199, 232, 0.45);
+  border-radius: 120px 120px 0 0;
+  pointer-events: none;
 }
 
 .rm-chart-title {
   margin: 0 0 8px;
-  font-size: 16px;
+  font-size: 28px;
   font-weight: 700;
-  color: #2f3854;
+  color: #2f3a56;
 }
 
 .rm-recent-card {
@@ -388,51 +430,207 @@ const resourceListStyles = String.raw`
   background: #f4f6fb;
   border: 1px solid #dce3ef;
   border-radius: 12px;
+  padding: 14px;
+}
+
+.rm-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.rm-resource-card {
+  position: relative;
+  border-radius: 24px;
   overflow: hidden;
+  min-height: 360px;
+  background: #223551;
+  border: 1px solid rgba(30, 50, 82, 0.55);
+  box-shadow: 0 10px 24px rgba(20, 35, 61, 0.2);
+  display: flex;
+  flex-direction: column;
 }
 
-.rm-table {
+.rm-card-image-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 250px;
+}
+
+.rm-card-image-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 26, 44, 0) 20%, rgba(15, 26, 44, 0.92) 82%);
+  pointer-events: none;
+}
+
+.rm-card-image {
   width: 100%;
-  border-collapse: collapse;
-}
-
-.rm-table thead {
-  background: #f2f5fb;
-}
-
-.rm-table th,
-.rm-table td {
-  padding: 12px 12px;
-  border-bottom: 1px solid #dce3ef;
-  font-size: 15px;
-  font-weight: 600;
-  color: #2c3850;
-  vertical-align: middle;
-}
-
-.rm-table th {
-  font-size: 16px;
-  font-weight: 800;
-}
-
-.rm-name {
-  font-weight: 700;
-}
-
-.rm-thumb {
-  width: 74px;
-  height: 54px;
-  border-radius: 6px;
+  height: 100%;
   object-fit: cover;
-  background: #e9edf4;
+  display: block;
 }
 
-.rm-thumb-empty {
+.rm-card-image-fallback {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #dbe5f5;
+  background: linear-gradient(135deg, #42699f 0%, #243a5c 100%);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.rm-card-details {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  padding: 16px 14px 12px;
+  color: #ffffff;
+}
+
+.rm-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.rm-card-name {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.rm-card-capacity {
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #f5f9ff;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(2px);
+  white-space: nowrap;
+}
+
+.rm-card-description {
+  margin: 0 0 10px;
   font-size: 13px;
-  color: #66758e;
+  line-height: 1.45;
+  color: rgba(238, 245, 255, 0.92);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rm-card-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.rm-card-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.rm-chip-location {
+  background: rgba(255, 255, 255, 0.18);
+  color: #f5f9ff;
+}
+
+.rm-chip-type {
+  background: rgba(19, 33, 56, 0.45);
+  color: #eef6ff;
+}
+
+.rm-chip-status.rm-status-available {
+  background: rgba(31, 157, 87, 0.9);
+  color: #e9ffef;
+}
+
+.rm-chip-status.rm-status-other {
+  background: rgba(85, 98, 122, 0.88);
+  color: #f0f4fb;
+}
+
+.rm-card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.rm-card-actions .rm-view-btn,
+.rm-card-actions .rm-book-btn,
+.rm-card-actions .rm-edit-btn,
+.rm-card-actions .rm-delete-btn {
+  border: none;
+  border-radius: 12px;
+  min-height: 34px;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 7px 10px;
+}
+
+.rm-card-actions .rm-view-btn {
+  background: rgba(46, 108, 215, 0.95);
+  color: #ffffff;
+}
+
+.rm-card-actions .rm-book-btn {
+  background: #ffffff;
+  color: #1f2d45;
+}
+
+.rm-card-actions .rm-book-btn:disabled {
+  background: rgba(206, 215, 232, 0.82);
+  color: #5f6d82;
+}
+
+.rm-card-actions .rm-edit-btn {
+  background: #f4c542;
+  color: #3d2b00;
+}
+
+.rm-card-actions .rm-delete-btn {
+  background: #dc3545;
+  color: #ffffff;
+}
+
+.rm-card-actions-admin {
+  grid-template-columns: 1fr 1fr;
+}
+
+.rm-empty-state {
+  min-height: 220px;
+  border: 1px dashed #c9d4e8;
+  border-radius: 14px;
+  background: #f8fafe;
+  color: #6c7a93;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 18px;
 }
 
 .rm-status-badge,
@@ -496,6 +694,19 @@ const resourceListStyles = String.raw`
   color: #ffffff;
 }
 
+.rm-action-buttons .rm-book-btn {
+  background: #10b981;
+  border-color: #059669;
+  color: #ffffff;
+}
+
+.rm-action-buttons .rm-book-btn:disabled {
+  background: #9ca3af;
+  border-color: #9ca3af;
+  color: #f8fafc;
+  cursor: not-allowed;
+}
+
 .rm-action-buttons .rm-edit-btn {
   background: #f4c542;
   border-color: #e6b72f;
@@ -525,7 +736,7 @@ const resourceListStyles = String.raw`
   }
 
   .rm-stat-label {
-    font-size: 18px;
+    font-size: 14px;
   }
 
   .rm-stat-value {
@@ -533,7 +744,7 @@ const resourceListStyles = String.raw`
   }
 
   .rm-chart-title {
-    font-size: 24px;
+    font-size: 22px;
   }
 
   .rm-recent-title {
@@ -569,6 +780,24 @@ const resourceListStyles = String.raw`
   }
 
   .rm-filter-row {
+    grid-template-columns: 1fr;
+  }
+
+  .rm-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rm-card-name {
+    font-size: 21px;
+  }
+
+  .rm-chart-title {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 640px) {
+  .rm-cards-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -689,9 +918,9 @@ const ResourceList = () => {
       grouped[type] = (grouped[type] || 0) + 1;
     });
 
-    return Object.entries(grouped).map(([name, count]) => ({
+    return resourceTypes.map((name) => ({
       name,
-      count,
+      count: grouped[name] || 0,
       fill: CHART_COLOR_MAP[name] || '#8ec5ff',
     }));
   }, [allResources]);
@@ -761,6 +990,12 @@ const ResourceList = () => {
     }
   };
 
+  const handleBookResource = (resourceId) => {
+    navigate(`/my-bookings?resourceId=${resourceId}`);
+  };
+
+  const isResourceBookable = (status) => String(status || '').toUpperCase() === 'AVAILABLE';
+
   const getResourceImageSrc = (resource) => {
     const value = (resource?.imageUrl || '').trim();
     if (!value) {
@@ -799,7 +1034,7 @@ const ResourceList = () => {
               <div className="rm-stats-grid">
                 <article className="rm-stat-card rm-stat-card-total">
                   <div className="rm-stat-label">
-                    <span className="rm-stat-dot rm-dot-blue" />
+                    <span className="rm-stat-icon rm-icon-blue">▮</span>
                     <span>Total Resources</span>
                   </div>
                   <p className="rm-stat-value rm-value-total">{stats.total}</p>
@@ -807,7 +1042,7 @@ const ResourceList = () => {
 
                 <article className="rm-stat-card rm-stat-card-available">
                   <div className="rm-stat-label">
-                    <span className="rm-stat-dot rm-dot-green" />
+                    <span className="rm-stat-icon rm-icon-green">✓</span>
                     <span>Available Resources</span>
                   </div>
                   <p className="rm-stat-value rm-value-available">{stats.available}</p>
@@ -815,7 +1050,7 @@ const ResourceList = () => {
 
                 <article className="rm-stat-card rm-stat-card-unavailable">
                   <div className="rm-stat-label">
-                    <span className="rm-stat-dot rm-dot-red" />
+                    <span className="rm-stat-icon rm-icon-red">✕</span>
                     <span>Unavailable Resources</span>
                   </div>
                   <p className="rm-stat-value rm-value-unavailable">{stats.unavailable}</p>
@@ -827,11 +1062,16 @@ const ResourceList = () => {
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={chartData} margin={{ top: 10, right: 10, left: -14, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="2 2" stroke="#e4e9f2" />
-                    <XAxis dataKey="name" tick={{ fill: '#7d8aa4', fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: '#7d8aa4', fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} />
+                    <XAxis dataKey="name" tick={{ fill: '#7d8aa4', fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: '#7d8aa4', fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
                     <Tooltip />
-                    <Legend iconType="rect" iconSize={10} wrapperStyle={{ fontSize: '11px', color: '#7d8aa4', paddingTop: '8px' }} />
-                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                    <Legend
+                      iconType="rect"
+                      iconSize={10}
+                      formatter={(value) => `${value.charAt(0)}${value.slice(1).toLowerCase()}`}
+                      wrapperStyle={{ fontSize: '12px', color: '#73809a', paddingTop: '8px' }}
+                    />
+                    <Bar dataKey="count" barSize={44} radius={[6, 6, 0, 0]}>
                       {chartData.map((entry) => (
                         <Cell key={entry.name} fill={entry.fill} />
                       ))}
@@ -937,49 +1177,53 @@ const ResourceList = () => {
                 <Spinner animation="border" role="status" />
               </div>
             ) : (
-              <table className="rm-table">
-                <thead>
-                  <tr>
-                    <th>Image</th>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Capacity</th>
-                    <th>Location</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {resources.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="rm-empty">
-                        No resources found
-                      </td>
-                    </tr>
-                  ) : (
-                    resources.map((resource) => {
-                      const resourceId = resource.id || resource._id;
-                      const imgSrc = getResourceImageSrc(resource);
-                      return (
-                        <tr key={resourceId || `${resource.name}-${resource.location}`}>
-                          <td>
-                            {imgSrc ? <img className="rm-thumb" src={imgSrc} alt={resource.name} /> : <div className="rm-thumb rm-thumb-empty">No Image</div>}
-                          </td>
-                          <td className="rm-name">{resource.name}</td>
-                          <td>
-                            <span className={`rm-type-badge rm-type-${(resource.type || '').toLowerCase()}`}>{resource.type}</span>
-                          </td>
-                          <td>{resource.capacity}</td>
-                          <td>{resource.location}</td>
-                          <td>
-                            <span className={`rm-status-badge ${resource.status === 'AVAILABLE' ? 'rm-status-available' : 'rm-status-other'}`}>
-                              {resource.status}
-                            </span>
-                          </td>
-                          <td>
-                            <div className="rm-action-buttons">
+              resources.length === 0 ? (
+                <div className="rm-empty-state">No resources found</div>
+              ) : (
+                <div className="rm-cards-grid">
+                  {resources.map((resource) => {
+                    const resourceId = resource.id || resource._id;
+                    const imgSrc = getResourceImageSrc(resource);
+                    const isBookable = isResourceBookable(resource.status);
+                    const statusClass = resource.status === 'AVAILABLE' ? 'rm-status-available' : 'rm-status-other';
+
+                    return (
+                      <article key={resourceId || `${resource.name}-${resource.location}`} className="rm-resource-card">
+                        <div className="rm-card-image-wrap">
+                          {imgSrc ? (
+                            <img className="rm-card-image" src={imgSrc} alt={resource.name} />
+                          ) : (
+                            <div className="rm-card-image-fallback">No Image</div>
+                          )}
+
+                          <div className="rm-card-details">
+                            <div className="rm-card-head">
+                              <h3 className="rm-card-name">{resource.name}</h3>
+                              <span className="rm-card-capacity">{resource.capacity || 0} seats</span>
+                            </div>
+
+                            <p className="rm-card-description">
+                              {resource.description || 'Resource is available for campus operations and academic activities.'}
+                            </p>
+
+                            <div className="rm-card-tags">
+                              <span className="rm-card-chip rm-chip-location">{resource.location || 'Campus Area'}</span>
+                              <span className="rm-card-chip rm-chip-type">{resource.type || 'RESOURCE'}</span>
+                              <span className={`rm-card-chip rm-chip-status ${statusClass}`}>{resource.status || 'UNKNOWN'}</span>
+                            </div>
+
+                            <div className={`rm-card-actions ${isAdmin ? 'rm-card-actions-admin' : ''}`}>
                               <button type="button" className="rm-view-btn" onClick={() => handleViewResource(resourceId)}>
                                 View
+                              </button>
+                              <button
+                                type="button"
+                                className="rm-book-btn"
+                                onClick={() => handleBookResource(resourceId)}
+                                disabled={!isBookable}
+                                title={isBookable ? 'Book this resource' : 'Booking is only available for AVAILABLE resources'}
+                              >
+                                {isBookable ? 'Book now' : 'Not Available'}
                               </button>
                               {isAdmin && (
                                 <>
@@ -992,13 +1236,13 @@ const ResourceList = () => {
                                 </>
                               )}
                             </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )
             )}
           </div>
         </div>

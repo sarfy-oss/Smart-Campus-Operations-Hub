@@ -8,7 +8,6 @@ import OperationsSidebar from '../components/OperationsSidebar';
 import TopbarUserMenu from '../components/TopbarUserMenu';
 import { authAPI, resourceAPI } from '../services/api';
 import { formatDate, getEnumDisplay } from '../utils/helpers';
-import BrandLogo from '../components/BrandLogo';
 
 const resourceShellStyles = String.raw`
 .rm-page {
@@ -357,16 +356,17 @@ const resourceDetailsStyles = String.raw`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .rd-details-card {
   background: #ffffff;
   border: 1px solid #dce2ec;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   display: grid;
   grid-template-columns: 380px 1fr;
+  box-shadow: 0 1px 4px rgba(16, 24, 40, 0.08);
 }
 
 .rd-image-wrap {
@@ -393,7 +393,7 @@ const resourceDetailsStyles = String.raw`
 }
 
 .rd-content {
-  padding: 22px;
+  padding: 24px;
 }
 
 .rd-content h2 {
@@ -533,31 +533,8 @@ const ResourceDetails = () => {
 
   return (
     <div className="rm-page">
-      <style>{resourceDetailsStyles}</style>
+      <style>{`${resourceShellStyles}\n${resourceDetailsStyles}`}</style>
       <OperationsSidebar activeKey="resources" />
-      <aside className="rm-sidebar" style={{ display: 'none' }}>
-        <div className="rm-brand">
-          <BrandLogo />
-        </div>
-
-        <nav className="rm-nav">
-          <button type="button" className="rm-nav-item">
-            <span>⌂</span> Dashboard
-          </button>
-          <button type="button" className="rm-nav-item rm-nav-item-active">
-            <span>▣</span> Resources
-          </button>
-          <button type="button" className="rm-nav-item">
-            <span>▤</span> Bookings
-          </button>
-          <button type="button" className="rm-nav-item">
-            <span>◌</span> Issues
-          </button>
-          <button type="button" className="rm-nav-item">
-            <span>◉</span> Users
-          </button>
-        </nav>
-      </aside>
 
       <section className="rm-main">
         <header className="rm-topbar">
