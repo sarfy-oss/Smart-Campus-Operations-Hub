@@ -41,6 +41,10 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * AuthController handles all authentication and user-related APIs
+ * Base URL: /auth
+ */
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -58,6 +62,7 @@ import java.util.stream.Collectors;
 })
 public class AuthController {
 
+    //Email validation pattern: must contain exactly one '@', at least one character before and after '@', and at least one '.' after '@'
     private static final Pattern EMAIL_REGEX =
             Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
@@ -67,34 +72,48 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
+/**
+     * LOGIN API
+     * Authenticate user and return JWT token
+     */
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO request) {
         try {
+            //Authenticate username & password
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
             );
         } catch (BadCredentialsException e) {
+            //Invalid credentials provided
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "Invalid username or password"));
         }
-
+       
+        //Load user details 
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.getUsername());
+       //GENERATE JWT TOKEN
         String token = jwtUtil.generateToken(userDetails);
-
+       // get user entity to include role in response
         User user = userRepository.findByUsername(request.getUsername()).orElseThrow();
+       // rutern token and user info in response 
         return ResponseEntity.ok(new LoginResponseDTO(token, user.getUsername(), user.getRole()));
     }
-
+     /**
+     * REGISTER API
+     * Create new user account
+     */
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterRequestDTO request) {
+       
+       // Normalize username: trim and convert to lowercase for consistent storage and comparison
         String normalizedUsername = request.getUsername().trim().toLowerCase(Locale.ROOT);
-
+       //check if username already exists in the database
         if (userRepository.existsByUsername(normalizedUsername)) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("message", "Username already exists"));
         }
-
+       // create new user entity with provided username and password, default role "USER", and current timestamp
         User user = User.builder()
                 .username(normalizedUsername)
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -102,20 +121,25 @@ public class AuthController {
                 .enabled(true)
                 .createdAt(LocalDateTime.now())
                 .build();
-
+       // Save user to database
         userRepository.save(user);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(Map.of("message", "Account created successfully"));
     }
-
+ /**
+     * GOOGLE LOGIN API (Student)
+     */
     @PostMapping("/student/google")
     public ResponseEntity<LoginResponseDTO> loginStudentWithGoogle(@Valid @RequestBody GoogleAuthRequest request) {
         return ResponseEntity.ok(authService.loginStudentWithGoogle(request.getToken()));
     }
-
+  /**
+     * GET CURRENT USER DETAILS
+     */
     @GetMapping("/me")
     public ResponseEntity<Map<String, Object>> me(Authentication authentication) {
+        //Get logged in user
         User user = resolveCurrentUser(authentication);
         return ResponseEntity.ok(Map.of(
                 "id", safeId(user),
@@ -124,32 +148,35 @@ public class AuthController {
                 "email", safeEmail(user)
         ));
     }
-
+/**
+     * UPDATE PROFILE
+     */
     @PutMapping("/me")
     public ResponseEntity<?> updateMyProfile(
             Authentication authentication,
             @Valid @RequestBody UpdateProfileRequestDTO request
     ) {
         User user = resolveCurrentUser(authentication);
+        //normalize username: trim and convert to lowercase for consistent storage and comparison
         String normalizedUsername = request.getUsername().trim().toLowerCase(Locale.ROOT);
-
+        // check duplicate username
         if (!normalizedUsername.equals(user.getUsername()) && userRepository.existsByUsername(normalizedUsername)) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("message", "Username already taken"));
         }
-
+// Normalize email: trim and convert to lowercase for consistent storage and comparison
         String normalizedEmail = request.getEmail() == null
                 ? ""
                 : request.getEmail().trim().toLowerCase(Locale.ROOT);
-
+//validate email format if provided (not blank)
         if (!isEmailValidOrBlank(normalizedEmail)) {
             return ResponseEntity.badRequest().body(Map.of("message", "Please provide a valid email address"));
         }
-
+// Update user entity with new username and email, then save changes to database
         user.setUsername(normalizedUsername);
         user.setEmail(normalizedEmail);
         User saved = userRepository.save(user);
-
+//Generate new JWT token 
         UserDetails updatedUserDetails = userDetailsService.loadUserByUsername(saved.getUsername());
         String refreshedToken = jwtUtil.generateToken(updatedUserDetails);
 
@@ -161,6 +188,9 @@ public class AuthController {
                 "email", safeEmail(saved)
         ));
     }
+/**
+     * CHANGE PASSWORD
+     */
 
     @PutMapping("/me/password")
     public ResponseEntity<?> changeMyPassword(
@@ -169,35 +199,41 @@ public class AuthController {
     ) {
         User user = resolveCurrentUser(authentication);
         String storedPassword = user.getPassword();
-
+//check if password exixts
         if (storedPassword == null || storedPassword.isBlank()) {
             return ResponseEntity.badRequest()
                     .body(Map.of("message", "Password changes are unavailable for this account"));
         }
+//check current password
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), storedPassword)) {
             return ResponseEntity.badRequest()
                     .body(Map.of("message", "Current password is incorrect"));
         }
 
+        // prevent same password reuse
         if (request.getCurrentPassword().equals(request.getNewPassword())) {
             return ResponseEntity.badRequest()
                     .body(Map.of("message", "New password must be different from the current password"));
         }
-
+//update password and save changes to database
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
 
         return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
     }
-
+/**
+     * DELETE OWN ACCOUNT
+     */
     @DeleteMapping("/me")
     public ResponseEntity<Map<String, String>> deleteMyAccount(Authentication authentication) {
         User user = resolveCurrentUser(authentication);
         userRepository.deleteById(user.getId());
         return ResponseEntity.ok(Map.of("message", "Account deleted successfully"));
     }
-
+/**
+     * GET ALL USERS (ADMIN)
+     */
     @GetMapping("/users")
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
         List<UserResponseDTO> users = userRepository.findAll().stream()
@@ -205,21 +241,24 @@ public class AuthController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(users);
     }
-
+ /**
+     * CREATE USER (ADMIN)
+     */
     @PostMapping("/users")
     public ResponseEntity<?> createUser(@Valid @RequestBody CreateUserDTO request) {
         String normalizedUsername = request.getUsername().trim().toLowerCase(Locale.ROOT);
-
+       // check duplicate username
         if (userRepository.existsByUsername(normalizedUsername)) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("message", "Username already exists"));
         }
-
+    //normalize role
         String role = normalizeRole(request.getRole());
+        //validate role format
         if (!role.matches("^[A-Z0-9_\\-]+$")) {
             return ResponseEntity.badRequest().body(Map.of("message", "Invalid role value"));
         }
-
+// create new user
         User user = User.builder()
                 .username(normalizedUsername)
                 .email(request.getEmail())
@@ -290,6 +329,7 @@ public class AuthController {
         userRepository.deleteById(id);
         return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
     }
+    
 
     private UserResponseDTO toResponseDTO(User user) {
         return new UserResponseDTO(
