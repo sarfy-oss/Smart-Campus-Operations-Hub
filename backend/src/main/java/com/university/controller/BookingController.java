@@ -30,8 +30,15 @@ public class BookingController {
     public ResponseEntity<BookingResponseDTO> createBooking(
             @Valid @RequestBody BookingRequestDTO dto,
             Authentication auth) {
+        // Admin can create booking on behalf of another user via targetUsername
+        String username = auth.getName();
+        boolean isAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (isAdmin && dto.getTargetUsername() != null && !dto.getTargetUsername().isBlank()) {
+            username = dto.getTargetUsername();
+        }
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(bookingService.createBooking(auth.getName(), dto));
+                .body(bookingService.createBooking(username, dto));
     }
 
     /** GET /api/bookings - admin only, all bookings */

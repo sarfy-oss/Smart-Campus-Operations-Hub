@@ -1,7 +1,6 @@
 package com.university.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
@@ -20,4 +19,7 @@ public class BookingRequestDTO {
     private String endTime;     // HH:mm
 
     private String purpose;
+
+    // Admin only - create booking on behalf of another user
+    private String targetUsername;
 }

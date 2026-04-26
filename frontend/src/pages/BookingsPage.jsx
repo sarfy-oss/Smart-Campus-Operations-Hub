@@ -54,14 +54,29 @@ const styles = `
 const STATUS_COLORS = { PENDING:'warning', APPROVED:'success', REJECTED:'danger', CANCELLED:'secondary' };
 const STATUS_ICONS  = { PENDING:'⏳', APPROVED:'✅', REJECTED:'❌', CANCELLED:'🚫' };
 
-const emptyForm = { resourceId:'', bookingDate:'', startTime:'', endTime:'', purpose:'' };
+const emptyForm = { resourceId:'', bookingDate:'', startTime:'', endTime:'', purpose:'', targetUsername:'' };
 
 /* ─── BookingForm - OUTSIDE main component to prevent remount on every keystroke ── */
-const BookingForm = ({ form, setForm, resources, onSubmit, onClose, title, submitLabel, saving }) => (
+const BookingForm = ({ form, setForm, resources, users, isAdmin, onSubmit, onClose, title, submitLabel, saving }) => (
   <Modal show onHide={onClose} size="lg">
     <Modal.Header closeButton><Modal.Title>{title}</Modal.Title></Modal.Header>
     <Form onSubmit={onSubmit}>
       <Modal.Body>
+        {/* Admin only - book on behalf of a user */}
+        {isAdmin && (
+          <Form.Group className="mb-3">
+            <Form.Label>Book on behalf of <span className="text-danger">*</span></Form.Label>
+            <Form.Select required value={form.targetUsername || ''}
+              onChange={e => setForm(f => ({ ...f, targetUsername: e.target.value }))}>
+              <option value="">Select a user...</option>
+              {users.map(u => (
+                <option key={u.id} value={u.username}>
+                  {u.username} {u.role === 'ADMIN' ? '(Admin)' : '(User)'}
+                </option>
+              ))}
+            </Form.Select>
+          </Form.Group>
+        )}
         <Form.Group className="mb-3">
           <Form.Label>Resource <span className="text-danger">*</span></Form.Label>
           <Form.Select required value={form.resourceId}
@@ -125,6 +140,7 @@ export default function BookingsPage() {
   const [activeTab,   setActiveTab]   = useState('all');
 
   const [resources,   setResources]   = useState([]);
+  const [users,       setUsers]       = useState([]);
 
   // Modals
   const [modal, setModal] = useState(null); // 'create' | 'edit' | 'view' | 'status'
@@ -170,6 +186,15 @@ export default function BookingsPage() {
       setResources(res.data || []);
     } catch {
       toast.error('Failed to load resources');
+    }
+    // Admin: load users list too
+    if (isAdmin) {
+      try {
+        const res = await authAPI.getUsers();
+        setUsers(res.data || []);
+      } catch {
+        // silently ignore
+      }
     }
   };
 
@@ -396,6 +421,7 @@ export default function BookingsPage() {
       {modal === 'create' && (
         <BookingForm
           form={form} setForm={setForm} resources={resources}
+          users={users} isAdmin={isAdmin}
           onSubmit={handleCreate} onClose={closeModal}
           title="New Booking Request" submitLabel="Submit Request" saving={saving}
         />
@@ -405,6 +431,7 @@ export default function BookingsPage() {
       {modal === 'edit' && (
         <BookingForm
           form={form} setForm={setForm} resources={resources}
+          users={users} isAdmin={isAdmin}
           onSubmit={handleEdit} onClose={closeModal}
           title="Edit Booking" submitLabel="Save Changes" saving={saving}
         />
