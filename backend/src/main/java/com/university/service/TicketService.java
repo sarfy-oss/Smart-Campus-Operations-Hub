@@ -3,11 +3,10 @@ package com.university.service;
 import com.university.dto.CreateTicketRequest;
 import com.university.dto.UpdateTicketStatusRequest;
 import com.university.dto.AssignTechnicianRequest;
+import com.university.dto.AssignTicketWorkflowRequest;
 import com.university.dto.TicketResponse;
 import com.university.entity.Ticket;
 import com.university.entity.TicketStatus;
-import com.university.entity.TicketPriority;
-import com.university.entity.TicketCategory;
 import com.university.entity.User;
 import com.university.exception.TicketNotFoundException;
 import com.university.exception.UnauthorizedException;
@@ -148,6 +147,44 @@ public class TicketService {
     }
 
     /**
+     * Assign a technician and update status in one step.
+     */
+    public TicketResponse updateWorkflow(String id, AssignTicketWorkflowRequest request, User currentUser, String userRole) {
+        Ticket ticket = findTicketOrThrow(id);
+        User technician = userRepository.findById(request.getTechnicianId())
+                .orElseThrow(() -> new RuntimeException("Technician not found"));
+
+        if (!"TECHNICIAN".equals(technician.getRole())) {
+            throw new IllegalArgumentException("Selected user is not a technician");
+        }
+
+        validateStatusTransition(ticket.getStatus(), request.getStatus(), userRole);
+
+        if (request.getStatus() == TicketStatus.REJECTED) {
+            if (request.getRejectionReason() == null || request.getRejectionReason().isBlank()) {
+                throw new IllegalArgumentException("Rejection reason is required when rejecting a ticket");
+            }
+            ticket.setRejectionReason(request.getRejectionReason());
+        } else {
+            ticket.setRejectionReason(null);
+        }
+
+        ticket.setAssignedTo(technician);
+        ticket.setStatus(request.getStatus());
+        ticket.setUpdatedAt(LocalDateTime.now());
+        ticket = ticketRepository.save(ticket);
+
+        log.info(
+                "Ticket {} assigned to {} and updated to {} by {}",
+                id,
+                technician.getUsername(),
+                request.getStatus(),
+                currentUser.getUsername()
+        );
+        return mapToResponse(ticket);
+    }
+
+    /**
      * Mark ticket as resolved with notes (technician only).
      */
     public TicketResponse resolveTicket(String id, String resolutionNotes, User technician) {
@@ -251,6 +288,7 @@ public class TicketService {
                 .reportedByUsername(ticket.getReportedBy().getUsername())
                 .assignedToId(ticket.getAssignedTo() != null ? ticket.getAssignedTo().getId() : null)
                 .assignedToUsername(ticket.getAssignedTo() != null ? ticket.getAssignedTo().getUsername() : null)
+                .assignedToSpecialization(ticket.getAssignedTo() != null ? ticket.getAssignedTo().getSpecialization() : null)
                 .createdAt(ticket.getCreatedAt())
                 .updatedAt(ticket.getUpdatedAt())
                 .build();

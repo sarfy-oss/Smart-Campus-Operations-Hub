@@ -30,6 +30,49 @@ const TicketDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  const normalizeTicket = (raw) => {
+    if (!raw) return raw;
+
+    const assignedTo = raw.assignedTo || (
+      raw.assignedToId || raw.assignedToUsername
+        ? {
+            id: raw.assignedToId,
+            username: raw.assignedToUsername,
+            specialization: raw.assignedToSpecialization,
+          }
+        : null
+    );
+
+    const reportedBy = raw.reportedBy || (
+      raw.reportedById || raw.reportedByUsername
+        ? {
+            id: raw.reportedById,
+            username: raw.reportedByUsername,
+          }
+        : null
+    );
+
+    return {
+      ...raw,
+      assignedTo,
+      reportedBy,
+    };
+  };
+
+  const normalizeComments = (items) => {
+    return (items || []).map((comment) => ({
+      ...comment,
+      author: comment.author || (
+        comment.authorId || comment.authorUsername
+          ? {
+              id: comment.authorId,
+              username: comment.authorUsername,
+            }
+          : null
+      ),
+    }));
+  };
+
   const [ticket, setTicket] = useState(null);
   const [comments, setComments] = useState([]);
   const [technicians, setTechnicians] = useState([]);
@@ -44,24 +87,45 @@ const TicketDetailsPage = () => {
   const [rejectionReason, setRejectionReason] = useState('');
   const [selectedTechnician, setSelectedTechnician] = useState('');
 
+  const formatSpecialization = (value) => {
+    const labels = {
+      ELECTRICIAN: 'Electrician',
+      TECHNICIAN: 'Technician',
+      IT_ASSISTANT: 'IT Assistant',
+      GENERAL: 'General',
+    };
+
+    return labels[value] || value || 'General';
+  };
+
   // Fetch ticket and comments
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
 
+        const profile = authAPI.getProfile();
+        setUserRole(profile?.role);
+        setIsAdmin(profile?.role === 'ADMIN');
+
         // Fetch ticket
         const ticketRes = await ticketAPI.getTicketById(id);
-        setTicket(ticketRes.data);
-        setNewStatus(ticketRes.data.status);
-        setSelectedTechnician(ticketRes.data.assignedTo?.id || '');
+        const normalizedTicket = normalizeTicket(ticketRes.data);
+        setTicket(normalizedTicket);
+        setNewStatus(normalizedTicket.status);
+        setSelectedTechnician(normalizedTicket.assignedTo?.id || '');
 
         // Fetch comments
-        const commentsRes = await ticketAPI.getComments(id);
-        setComments(commentsRes.data || []);
+        try {
+          const commentsRes = await ticketAPI.getComments(id);
+          setComments(normalizeComments(commentsRes.data));
+        } catch (commentError) {
+          console.error('Error fetching comments:', commentError);
+          setComments([]);
+        }
 
         // Fetch technicians
-        if (isAdmin) {
+        if (profile?.role === 'ADMIN') {
           try {
             const techRes = await ticketAPI.getTechnicians();
             setTechnicians(techRes.data || []);
@@ -69,11 +133,6 @@ const TicketDetailsPage = () => {
             console.error('Error fetching technicians:', error);
           }
         }
-
-        // Get user info
-        const profile = authAPI.getProfile();
-        setUserRole(profile?.role);
-        setIsAdmin(profile?.role === 'ADMIN');
       } catch (error) {
         console.error('Error fetching ticket:', error);
         toast.error('Failed to load ticket details');
@@ -83,7 +142,7 @@ const TicketDetailsPage = () => {
     };
 
     fetchData();
-  }, [id, isAdmin]);
+  }, [id]);
 
   const handleAddComment = async (e) => {
     e.preventDefault();
@@ -100,7 +159,7 @@ const TicketDetailsPage = () => {
 
       // Refresh comments
       const commentsRes = await ticketAPI.getComments(id);
-      setComments(commentsRes.data || []);
+      setComments(normalizeComments(commentsRes.data));
 
       setNewComment('');
       toast.success('Comment added successfully');
@@ -125,7 +184,7 @@ const TicketDetailsPage = () => {
 
       // Refresh ticket
       const ticketRes = await ticketAPI.getTicketById(id);
-      setTicket(ticketRes.data);
+      setTicket(normalizeTicket(ticketRes.data));
 
       setShowStatusModal(false);
       toast.success('Ticket status updated');
@@ -149,13 +208,32 @@ const TicketDetailsPage = () => {
 
       // Refresh ticket
       const ticketRes = await ticketAPI.getTicketById(id);
-      setTicket(ticketRes.data);
+      setTicket(normalizeTicket(ticketRes.data));
 
       setShowAssignModal(false);
       toast.success('Technician assigned successfully');
     } catch (error) {
       console.error('Error assigning technician:', error);
       toast.error('Failed to assign technician');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteTicket = async () => {
+    const isConfirmed = window.confirm('Are you sure you want to delete this ticket? This action cannot be undone.');
+    if (!isConfirmed) {
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await ticketAPI.deleteTicket(id);
+      toast.success('Ticket deleted successfully');
+      navigate('/admin/tickets');
+    } catch (error) {
+      console.error('Error deleting ticket:', error);
+      toast.error('Failed to delete ticket');
     } finally {
       setSubmitting(false);
     }
@@ -293,6 +371,23 @@ const TicketDetailsPage = () => {
                   <p>{ticket.description}</p>
                 </div>
 
+                <div className="info-group">
+                  <small className="text-muted">Current Assignment</small>
+                  {ticket.assignedTo ? (
+                    <div className="d-flex flex-wrap align-items-center gap-2 mt-2">
+                      <Badge bg="info">{ticket.assignedTo.username}</Badge>
+                      <Badge bg="secondary">
+                        {formatSpecialization(ticket.assignedTo.specialization)}
+                      </Badge>
+                      <Badge bg="primary">{ticket.status}</Badge>
+                    </div>
+                  ) : (
+                    <Alert variant="warning" className="mt-2 mb-0">
+                      Not assigned yet. Current status: {ticket.status}
+                    </Alert>
+                  )}
+                </div>
+
                 {ticket.resolutionNotes && (
                   <div className="info-group resolution-notes">
                     <small className="text-muted">Resolution Notes</small>
@@ -376,7 +471,10 @@ const TicketDetailsPage = () => {
                     <p className="mb-1">
                       <small className="text-muted">Assigned To</small>
                     </p>
-                    <p className="fw-bold">{ticket.assignedTo.username}</p>
+                    <p className="fw-bold mb-1">{ticket.assignedTo.username}</p>
+                    <Badge bg="info" className="mb-2">
+                      {formatSpecialization(ticket.assignedTo.specialization)}
+                    </Badge>
                     {isAdmin && (
                       <Button
                         variant="outline-warning"
@@ -464,8 +562,10 @@ const TicketDetailsPage = () => {
                     variant="outline-danger"
                     size="sm"
                     className="w-100"
+                    onClick={handleDeleteTicket}
+                    disabled={submitting}
                   >
-                    Delete Ticket
+                    {submitting ? 'Deleting...' : 'Delete Ticket'}
                   </Button>
                 )}
               </Card.Body>
@@ -539,7 +639,7 @@ const TicketDetailsPage = () => {
               <option value="">Choose a technician...</option>
               {technicians.map((tech) => (
                 <option key={tech.id} value={tech.id}>
-                  {tech.username} ({tech.email})
+                      {tech.username} ({formatSpecialization(tech.specialization)})
                 </option>
               ))}
             </Form.Select>

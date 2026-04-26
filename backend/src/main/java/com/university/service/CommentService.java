@@ -107,12 +107,15 @@ public class CommentService {
      * Convert entity to response DTO with ownership flag.
      */
     private CommentResponse mapToResponse(TicketComment comment, String currentUserId) {
+        String authorId = comment.getAuthor() != null ? comment.getAuthor().getId() : null;
+        String authorUsername = comment.getAuthor() != null ? comment.getAuthor().getUsername() : "Unknown User";
+
         return CommentResponse.builder()
                 .id(comment.getId())
                 .content(comment.getContent())
-                .authorId(comment.getAuthor().getId())
-                .authorUsername(comment.getAuthor().getUsername())
-                .isAuthor(comment.getAuthor().getId().equals(currentUserId))
+            .authorId(authorId)
+            .authorUsername(authorUsername)
+            .isAuthor(authorId != null && authorId.equals(currentUserId))
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .build();

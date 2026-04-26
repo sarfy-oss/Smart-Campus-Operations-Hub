@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.university.dto.CommentRequest;
 import com.university.dto.CommentResponse;
 import com.university.entity.User;
+import com.university.repository.UserRepository;
 import com.university.service.CommentService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,7 +27,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * REST controller for ticket comment management.
- * Base path: /api/v1/tickets/{ticketId}/comments
+ * Base path: /v1/tickets/{ticketId}/comments (context path /api is added globally)
  */
 @RestController
 @RequiredArgsConstructor
@@ -35,46 +36,49 @@ import lombok.RequiredArgsConstructor;
 public class CommentController {
 
     private final CommentService commentService;
+    private final UserRepository userRepository;
 
     /**
      * Add a comment to a ticket.
-     * POST /api/v1/tickets/{ticketId}/comments
+        * POST /v1/tickets/{ticketId}/comments
      * Access: Ticket reporter, assigned technician, or admin
      */
-    @PostMapping("/api/v1/tickets/{ticketId}/comments")
+        @PostMapping("/v1/tickets/{ticketId}/comments")
     @Operation(summary = "Add a comment to a ticket")
     public ResponseEntity<CommentResponse> addComment(
             @PathVariable String ticketId,
             @Valid @RequestBody CommentRequest request,
             Authentication authentication
     ) {
-        User author = (User) authentication.getPrincipal();
+        User author = userRepository.findByUsername(authentication.getName())
+            .orElseThrow(() -> new RuntimeException("User not found"));
         CommentResponse response = commentService.addComment(ticketId, request, author);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
      * Get all comments for a ticket.
-     * GET /api/v1/tickets/{ticketId}/comments
+        * GET /v1/tickets/{ticketId}/comments
      * Access: Ticket reporter, assigned technician, or admin
      */
-    @GetMapping("/api/v1/tickets/{ticketId}/comments")
+        @GetMapping("/v1/tickets/{ticketId}/comments")
     @Operation(summary = "Get all comments for a ticket")
     public ResponseEntity<List<CommentResponse>> getComments(
             @PathVariable String ticketId,
             Authentication authentication
     ) {
-        User currentUser = (User) authentication.getPrincipal();
+        User currentUser = userRepository.findByUsername(authentication.getName())
+            .orElseThrow(() -> new RuntimeException("User not found"));
         List<CommentResponse> responses = commentService.getComments(ticketId, currentUser.getId());
         return ResponseEntity.ok(responses);
     }
 
     /**
      * Edit a comment (author only).
-     * PUT /api/v1/tickets/{ticketId}/comments/{commentId}
+        * PUT /v1/tickets/{ticketId}/comments/{commentId}
      * Access: Comment author or admin
      */
-    @PutMapping("/api/v1/tickets/{ticketId}/comments/{commentId}")
+        @PutMapping("/v1/tickets/{ticketId}/comments/{commentId}")
     @Operation(summary = "Edit a comment (author only)")
     public ResponseEntity<CommentResponse> editComment(
             @PathVariable String ticketId,
@@ -82,24 +86,26 @@ public class CommentController {
             @Valid @RequestBody CommentRequest request,
             Authentication authentication
     ) {
-        User currentUser = (User) authentication.getPrincipal();
+        User currentUser = userRepository.findByUsername(authentication.getName())
+            .orElseThrow(() -> new RuntimeException("User not found"));
         CommentResponse response = commentService.editComment(commentId, request, currentUser);
         return ResponseEntity.ok(response);
     }
 
     /**
      * Delete a comment (author or admin).
-     * DELETE /api/v1/tickets/{ticketId}/comments/{commentId}
+        * DELETE /v1/tickets/{ticketId}/comments/{commentId}
      * Access: Comment author or admin
      */
-    @DeleteMapping("/api/v1/tickets/{ticketId}/comments/{commentId}")
+        @DeleteMapping("/v1/tickets/{ticketId}/comments/{commentId}")
     @Operation(summary = "Delete a comment (author or admin)")
     public ResponseEntity<Void> deleteComment(
             @PathVariable String ticketId,
             @PathVariable String commentId,
             Authentication authentication
     ) {
-        User currentUser = (User) authentication.getPrincipal();
+        User currentUser = userRepository.findByUsername(authentication.getName())
+            .orElseThrow(() -> new RuntimeException("User not found"));
         String userRole = extractRoleFromAuthentication(authentication);
         commentService.deleteComment(commentId, currentUser, userRole);
         return ResponseEntity.noContent().build();

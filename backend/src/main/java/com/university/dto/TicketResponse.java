@@ -49,6 +49,7 @@ public class TicketResponse {
     // Assigned technician info
     private String assignedToUsername;
     private String assignedToId;
+    private String assignedToSpecialization;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

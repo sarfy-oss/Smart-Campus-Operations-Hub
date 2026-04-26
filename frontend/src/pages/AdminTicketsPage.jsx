@@ -27,6 +27,7 @@ const AdminTicketsPage = () => {
   const [filterPriority, setFilterPriority] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewType, setViewType] = useState('grid');
+  const [technicianSpecialization, setTechnicianSpecialization] = useState('');
   
   // Modals
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -50,6 +51,12 @@ const AdminTicketsPage = () => {
   useEffect(() => {
     fetchAllData();
   }, []);
+
+  useEffect(() => {
+    if (showAssignModal) {
+      fetchTechnicians(technicianSpecialization);
+    }
+  }, [showAssignModal, technicianSpecialization]);
 
   const fetchAllData = async () => {
     try {
@@ -83,9 +90,9 @@ const AdminTicketsPage = () => {
     }
   };
 
-  const fetchTechnicians = async () => {
+  const fetchTechnicians = async (specialization = '') => {
     try {
-      const response = await ticketAPI.getTechnicians();
+      const response = await ticketAPI.getTechnicians(specialization);
       setTechnicians(response.data || []);
     } catch (error) {
       console.error('Error fetching technicians:', error);
@@ -95,14 +102,14 @@ const AdminTicketsPage = () => {
   const handleAssignClick = (ticket) => {
     setSelectedTicket(ticket);
     setSelectedTechnician(ticket.assignedTo?.id || '');
+    setNewStatus(ticket.status || 'OPEN');
+    setRejectionReason(ticket.rejectionReason || '');
+    setTechnicianSpecialization(ticket.assignedTo?.specialization || '');
     setShowAssignModal(true);
   };
 
   const handleStatusClick = (ticket) => {
-    setSelectedTicket(ticket);
-    setNewStatus(ticket.status);
-    setRejectionReason(ticket.rejectionReason || '');
-    setShowStatusModal(true);
+    handleAssignClick(ticket);
   };
 
   const handleAssignTechnician = async () => {
@@ -111,15 +118,30 @@ const AdminTicketsPage = () => {
       return;
     }
 
+    if (!newStatus) {
+      toast.warning('Please select a status');
+      return;
+    }
+
+    if (newStatus === 'REJECTED' && !rejectionReason.trim()) {
+      toast.warning('Please provide a rejection reason');
+      return;
+    }
+
     try {
       setSubmitting(true);
-      await ticketAPI.assignTechnician(selectedTicket.id, { technicianId: selectedTechnician });
-      toast.success('Technician assigned successfully');
+      await ticketAPI.updateTicketWorkflow(selectedTicket.id, {
+        technicianId: selectedTechnician,
+        status: newStatus,
+        rejectionReason: newStatus === 'REJECTED' ? rejectionReason : undefined,
+      });
+      toast.success('Ticket workflow updated successfully');
       setShowAssignModal(false);
+      setShowStatusModal(false);
       fetchTickets();
     } catch (error) {
-      console.error('Error assigning technician:', error);
-      toast.error('Failed to assign technician');
+      console.error('Error updating ticket workflow:', error);
+      toast.error('Failed to update ticket workflow');
     } finally {
       setSubmitting(false);
     }
@@ -364,22 +386,22 @@ const AdminTicketsPage = () => {
                 <div className="ticket-grid-wrapper">
                   <TicketCard ticket={ticket} showAssignedTo={true} />
                   <div className="ticket-actions-overlay">
-                    <Button
-                      variant="warning"
-                      size="sm"
-                      onClick={() => handleAssignClick(ticket)}
-                      className="me-2"
-                    >
-                      👤 Assign
-                    </Button>
-                    <Button
-                      variant="info"
-                      size="sm"
-                      onClick={() => handleStatusClick(ticket)}
-                      className="me-2"
-                    >
-                      ⚙️ Status
-                    </Button>
+                      <Button
+                        variant="warning"
+                        size="sm"
+                        onClick={() => handleAssignClick(ticket)}
+                        className="me-2"
+                      >
+                        👤 Workflow
+                      </Button>
+                      <Button
+                        variant="info"
+                        size="sm"
+                        onClick={() => handleStatusClick(ticket)}
+                        className="me-2"
+                      >
+                        ⚙️ Edit
+                      </Button>
                     <Button
                       variant="outline-primary"
                       size="sm"
@@ -433,20 +455,18 @@ const AdminTicketsPage = () => {
                     </td>
                     <td className="action-buttons">
                       <Button
-                        variant="sm"
                         size="sm"
                         onClick={() => handleAssignClick(ticket)}
                         className="action-btn assign-btn"
-                        title="Assign technician"
+                        title="Update workflow"
                       >
                         👤
                       </Button>
                       <Button
-                        variant="sm"
                         size="sm"
                         onClick={() => handleStatusClick(ticket)}
                         className="action-btn status-btn"
-                        title="Update status"
+                        title="Update workflow"
                       >
                         ⚙️
                       </Button>
@@ -471,7 +491,7 @@ const AdminTicketsPage = () => {
       {/* Assign Technician Modal */}
       <Modal show={showAssignModal} onHide={() => setShowAssignModal(false)} centered>
         <Modal.Header closeButton className="border-bottom">
-          <Modal.Title>👤 Assign Technician</Modal.Title>
+          <Modal.Title>👤 Assign & Update Workflow</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {selectedTicket && (
@@ -483,19 +503,63 @@ const AdminTicketsPage = () => {
                 </p>
               </div>
               <Form.Group>
+                <Form.Label className="fw-bold">Technician Type</Form.Label>
+                <Form.Select
+                  value={technicianSpecialization}
+                  onChange={(e) => {
+                    setTechnicianSpecialization(e.target.value);
+                    setSelectedTechnician('');
+                  }}
+                  disabled={submitting}
+                  className="mb-3"
+                >
+                  <option value="">All Technicians</option>
+                  <option value="ELECTRICIAN">Electrician</option>
+                  <option value="TECHNICIAN">Technician</option>
+                  <option value="IT_ASSISTANT">IT Assistant</option>
+                </Form.Select>
+
                 <Form.Label className="fw-bold">Select Technician</Form.Label>
                 <Form.Select
                   value={selectedTechnician}
                   onChange={(e) => setSelectedTechnician(e.target.value)}
                   disabled={submitting}
+                  className="mb-3"
                 >
                   <option value="">Choose a technician...</option>
                   {technicians.map((tech) => (
                     <option key={tech.id} value={tech.id}>
-                      {tech.username} ({tech.email})
+                      {tech.username} ({tech.specialization || 'General'} - {tech.email})
                     </option>
                   ))}
                 </Form.Select>
+
+                <Form.Label className="fw-bold">Update Status</Form.Label>
+                <Form.Select
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value)}
+                  disabled={submitting}
+                >
+                  <option value="OPEN">🔴 Open</option>
+                  <option value="IN_PROGRESS">🟡 In Progress</option>
+                  <option value="RESOLVED">🔵 Resolved</option>
+                  <option value="CLOSED">🟢 Closed</option>
+                  <option value="REJECTED">⚫ Rejected</option>
+                </Form.Select>
+
+                {newStatus === 'REJECTED' && (
+                  <Form.Group className="mt-3">
+                    <Form.Label className="fw-bold">Reason for Rejection</Form.Label>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      placeholder="Explain why this ticket is being rejected..."
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      disabled={submitting}
+                    />
+                  </Form.Group>
+                )}
               </Form.Group>
             </>
           )}
@@ -505,7 +569,7 @@ const AdminTicketsPage = () => {
             Cancel
           </Button>
           <Button variant="primary" onClick={handleAssignTechnician} disabled={submitting}>
-            {submitting ? <Spinner size="sm" className="me-2" /> : '✓'} Assign
+            {submitting ? <Spinner size="sm" className="me-2" /> : '✓'} Save Workflow
           </Button>
         </Modal.Footer>
       </Modal>

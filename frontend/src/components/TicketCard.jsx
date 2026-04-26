@@ -34,6 +34,17 @@ const TicketCard = ({ ticket, onStatusClick, showAssignedTo = false }) => {
     return `${days} days ago`;
   };
 
+  const formatSpecialization = (value) => {
+    const labels = {
+      ELECTRICIAN: 'Electrician',
+      TECHNICIAN: 'Technician',
+      IT_ASSISTANT: 'IT Assistant',
+      GENERAL: 'General',
+    };
+
+    return labels[value] || value || 'General';
+  };
+
   return (
     <Card className="ticket-card h-100 border-left">
       <Card.Body className="d-flex flex-column">
@@ -69,6 +80,9 @@ const TicketCard = ({ ticket, onStatusClick, showAssignedTo = false }) => {
             <small className="text-muted">
               Assigned to:{' '}
               <strong>{ticket.assignedTo.username}</strong>
+              {ticket.assignedTo.specialization
+                ? ` (${formatSpecialization(ticket.assignedTo.specialization)})`
+                : ''}
             </small>
           </div>
         )}

@@ -349,8 +349,14 @@ export const ticketAPI = {
   deleteComment: (ticketId, commentId) =>
     apiClient.delete(`/v1/tickets/${ticketId}/comments/${commentId}`),
 
-  getTechnicians: () =>
-    apiClient.get('/v1/tickets/technicians/list'),
+  getTechnicians: (specialization = '') =>
+    apiClient.get('/v1/tickets/technicians/list', {
+      params: specialization ? { specialization } : {},
+    }),
+
+  // Update assignment and status together
+  updateTicketWorkflow: (id, data) =>
+    apiClient.patch(`/v1/tickets/${id}/workflow`, data),
 };
 
 export default apiClient;

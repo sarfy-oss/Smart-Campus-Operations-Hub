@@ -102,6 +102,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PATCH, "/api/v1/tickets/*/status").hasAnyRole("ADMIN", "TECHNICIAN")
                 // Assign technician (admin only)
                 .requestMatchers(HttpMethod.PATCH, "/api/v1/tickets/*/assign").hasRole("ADMIN")
+                // Update assignment and status together (admin only)
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/tickets/*/workflow").hasRole("ADMIN")
                 // Delete ticket (admin only)
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/tickets/*").hasRole("ADMIN")
 
@@ -158,7 +160,7 @@ public class SecurityConfig {
                 "https://[::1]",
                 "https://[::1]:*"
         ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);

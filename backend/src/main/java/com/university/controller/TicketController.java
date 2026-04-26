@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.university.dto.AssignTechnicianRequest;
+import com.university.dto.AssignTicketWorkflowRequest;
 import com.university.dto.CreateTicketRequest;
 import com.university.dto.TicketResponse;
 import com.university.dto.UpdateTicketStatusRequest;
@@ -187,6 +188,26 @@ public class TicketController {
         return ResponseEntity.ok(response);
     }
 
+        /**
+         * Assign a technician and update ticket status in one action.
+         * PATCH /v1/tickets/{id}/workflow
+         * Access: ADMIN only
+         */
+        @PatchMapping("/{id}/workflow")
+        @Operation(summary = "Assign a technician and update ticket status")
+        public ResponseEntity<TicketResponse> updateWorkflow(
+            @PathVariable String id,
+            @Valid @RequestBody AssignTicketWorkflowRequest request,
+            Authentication authentication
+        ) {
+        User currentUser = userRepository.findByUsername(authentication.getName())
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        String userRole = extractRoleFromAuthentication(authentication);
+
+        TicketResponse response = ticketService.updateWorkflow(id, request, currentUser, userRole);
+        return ResponseEntity.ok(response);
+        }
+
     /**
      * Delete a ticket.
      * DELETE /v1/tickets/{id}
@@ -201,13 +222,15 @@ public class TicketController {
 
     /**
      * Get all available technicians for assignment.
-     * GET /v1/tickets/technicians/list
+     * GET /v1/tickets/technicians/list?specialization=ELECTRICIAN
      * Access: ADMIN only
      */
     @GetMapping("/technicians/list")
     @Operation(summary = "Get all available technicians")
-    public ResponseEntity<List<User>> getAllTechnicians() {
-        List<User> technicians = userRepository.findByRole("TECHNICIAN");
+    public ResponseEntity<List<User>> getAllTechnicians(@RequestParam(required = false) String specialization) {
+        List<User> technicians = specialization == null || specialization.isBlank()
+                ? userRepository.findByRole("TECHNICIAN")
+                : userRepository.findByRoleAndSpecialization("TECHNICIAN", specialization.toUpperCase());
         return ResponseEntity.ok(technicians);
     }
 
