@@ -20,18 +20,21 @@ import { authAPI, resourceAPI } from '../services/api';
 
 const resourceListStyles = String.raw`
 .rm-page {
-  min-height: 100vh;
+  height: 100vh;
   display: grid;
   grid-template-columns: 285px 1fr;
   background: #e9edf7;
   color: #1d2433;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
 }
 
 .rm-main {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .rm-topbar {
@@ -68,6 +71,11 @@ const resourceListStyles = String.raw`
 }
 
 .rm-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   padding: 24px 28px;
   min-width: 0;
   background: linear-gradient(120deg, #eef1f8 0%, #eceff6 52%, #e9edf5 100%);
@@ -436,17 +444,17 @@ const resourceListStyles = String.raw`
 .rm-cards-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 12px;
 }
 
 .rm-resource-card {
   position: relative;
-  border-radius: 24px;
+  border-radius: 18px;
   overflow: hidden;
-  min-height: 360px;
+  min-height: 310px;
   background: #223551;
   border: 1px solid rgba(30, 50, 82, 0.55);
-  box-shadow: 0 10px 24px rgba(20, 35, 61, 0.2);
+  box-shadow: 0 8px 18px rgba(20, 35, 61, 0.18);
   display: flex;
   flex-direction: column;
 }
@@ -454,7 +462,7 @@ const resourceListStyles = String.raw`
 .rm-card-image-wrap {
   position: relative;
   flex: 1;
-  min-height: 250px;
+  min-height: 215px;
 }
 
 .rm-card-image-wrap::after {
@@ -490,7 +498,7 @@ const resourceListStyles = String.raw`
   right: 0;
   bottom: 0;
   z-index: 1;
-  padding: 16px 14px 12px;
+  padding: 12px 12px 10px;
   color: #ffffff;
 }
 
@@ -499,11 +507,11 @@ const resourceListStyles = String.raw`
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .rm-card-name {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.1;
@@ -511,9 +519,9 @@ const resourceListStyles = String.raw`
 }
 
 .rm-card-capacity {
-  padding: 4px 9px;
+  padding: 3px 8px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #f5f9ff;
   background: rgba(255, 255, 255, 0.22);
@@ -522,9 +530,9 @@ const resourceListStyles = String.raw`
 }
 
 .rm-card-description {
-  margin: 0 0 10px;
-  font-size: 13px;
-  line-height: 1.45;
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.35;
   color: rgba(238, 245, 255, 0.92);
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -535,9 +543,9 @@ const resourceListStyles = String.raw`
 .rm-card-tags {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .rm-card-chip {
@@ -545,8 +553,8 @@ const resourceListStyles = String.raw`
   align-items: center;
   gap: 4px;
   border-radius: 999px;
-  padding: 5px 9px;
-  font-size: 11px;
+  padding: 4px 8px;
+  font-size: 10px;
   font-weight: 700;
   line-height: 1;
 }
@@ -574,7 +582,7 @@ const resourceListStyles = String.raw`
 .rm-card-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 6px;
 }
 
 .rm-card-actions .rm-view-btn,
@@ -582,11 +590,11 @@ const resourceListStyles = String.raw`
 .rm-card-actions .rm-edit-btn,
 .rm-card-actions .rm-delete-btn {
   border: none;
-  border-radius: 12px;
-  min-height: 34px;
-  font-size: 13px;
+  border-radius: 10px;
+  min-height: 30px;
+  font-size: 12px;
   font-weight: 800;
-  padding: 7px 10px;
+  padding: 6px 8px;
 }
 
 .rm-card-actions .rm-view-btn {
@@ -772,7 +780,15 @@ const resourceListStyles = String.raw`
 
 @media (max-width: 900px) {
   .rm-page {
+    height: auto;
+    min-height: 100vh;
     grid-template-columns: 1fr;
+    overflow: visible;
+  }
+
+  .rm-main,
+  .rm-content {
+    overflow: visible;
   }
 
   .rm-overview-grid {

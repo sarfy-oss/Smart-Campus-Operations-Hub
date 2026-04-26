@@ -22,6 +22,18 @@ const PUBLIC_AUTH_PATHS = new Set([
   '/auth/student/google',
 ]);
 
+const normalizeToken = (token) => {
+  const value = String(token || '').trim();
+  if (!value) return '';
+  return value.startsWith('Bearer ') ? value.slice(7).trim() : value;
+};
+
+const normalizeRoleValue = (role) => {
+  const value = String(role || '').trim().toUpperCase();
+  if (!value) return '';
+  return value.startsWith('ROLE_') ? value.slice(5) : value;
+};
+
 const isPublicAuthRequest = (url) => {
   if (!url) return false;
 
@@ -72,32 +84,76 @@ const clearAuthProfile = () => {
 };
 
 const saveAuthProfile = (profile) => {
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(profile));
+  const normalizedProfile = {
+    ...(profile || {}),
+    token: normalizeToken(profile?.token),
+    role: normalizeRoleValue(profile?.role),
+  };
+
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(normalizedProfile));
 
   // Keep legacy keys for any older guards/components that still read them directly.
-  if (profile?.token) {
-    localStorage.setItem(LEGACY_TOKEN_KEY, profile.token);
+  if (normalizedProfile.token) {
+    localStorage.setItem(LEGACY_TOKEN_KEY, normalizedProfile.token);
   }
   localStorage.setItem(
     LEGACY_USER_KEY,
     JSON.stringify({
-      id: profile?.id || '',
-      username: profile?.username || '',
-      email: profile?.email || '',
-      role: profile?.role || '',
+      id: normalizedProfile?.id || '',
+      username: normalizedProfile?.username || '',
+      email: normalizedProfile?.email || '',
+      role: normalizedProfile?.role || '',
     })
   );
 };
 
 const getAuthProfile = () => {
   const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    clearAuthProfile();
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      const normalized = {
+        ...(parsed || {}),
+        token: normalizeToken(parsed?.token),
+        role: normalizeRoleValue(parsed?.role),
+      };
+      if (!normalized.token) {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+      } else {
+        // Keep storage stable if previous data contained prefixed token/role values.
+        saveAuthProfile(normalized);
+        return normalized;
+      }
+    } catch {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    }
+  }
+
+  const legacyToken = normalizeToken(localStorage.getItem(LEGACY_TOKEN_KEY));
+  if (!legacyToken) {
     return null;
   }
+
+  let legacyUser = {};
+  const rawLegacyUser = localStorage.getItem(LEGACY_USER_KEY);
+  if (rawLegacyUser) {
+    try {
+      legacyUser = JSON.parse(rawLegacyUser) || {};
+    } catch {
+      legacyUser = {};
+    }
+  }
+
+  const migratedProfile = {
+    id: legacyUser?.id || '',
+    username: legacyUser?.username || '',
+    email: legacyUser?.email || '',
+    role: normalizeRoleValue(legacyUser?.role),
+    token: legacyToken,
+  };
+
+  saveAuthProfile(migratedProfile);
+  return migratedProfile;
 };
 
 /**
@@ -214,12 +270,12 @@ export const authAPI = {
     const p = getAuthProfile();
     if (!p) return false;
 
-    const expected = String(role || '').toUpperCase();
-    const current = String(p.role || '').toUpperCase();
+    const expected = normalizeRoleValue(role);
+    const current = normalizeRoleValue(p.role);
     if (current === expected) return true;
 
     if (Array.isArray(p.roles)) {
-      return p.roles.some((item) => String(item || '').toUpperCase() === expected);
+      return p.roles.some((item) => normalizeRoleValue(item) === expected);
     }
 
     return false;
