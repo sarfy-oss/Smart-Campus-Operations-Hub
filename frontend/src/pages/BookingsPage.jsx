@@ -150,6 +150,10 @@ export default function BookingsPage() {
       setTotalPages(d.totalPages || 1);
       setTotalItems(d.totalElements || 0);
     } catch (err) {
+      if (err?.code === 'ECONNABORTED') {
+        toast.error('Failed to load bookings: server took too long to respond. Please try again.');
+        return;
+      }
       const msg = err?.response?.data?.message || err?.response?.data?.error || err.message;
       toast.error(`Failed to load bookings: ${msg || 'Unknown error'}`);
     } finally {
