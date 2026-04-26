@@ -190,6 +190,14 @@ export const resourceAPI = {
     apiClient.get('/resources/filter/type-capacity', { params: { type, capacity, page, size } }),
 
   getAvailableResources: () => apiClient.get('/resources/available/list'),
+
+  getReviews: (resourceId) => apiClient.get(`/resources/${resourceId}/reviews`),
+
+  createReview: (resourceId, data) => apiClient.post(`/resources/${resourceId}/reviews`, data),
+
+  updateMyReview: (resourceId, data) => apiClient.put(`/resources/${resourceId}/reviews/me`, data),
+
+  deleteMyReview: (resourceId) => apiClient.delete(`/resources/${resourceId}/reviews/me`),
 };
 
 /**

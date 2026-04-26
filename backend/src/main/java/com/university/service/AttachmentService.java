@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -33,7 +34,7 @@ public class AttachmentService {
 
     private final TicketAttachmentRepository attachmentRepository;
     private final TicketRepository ticketRepository;
-    private final Cloudinary cloudinary;
+    private final Optional<Cloudinary> cloudinary;
 
     // Configuration
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -98,7 +99,7 @@ public class AttachmentService {
         // Delete from Cloudinary if public_id exists
         try {
             if (attachment.getFilePath() != null && !attachment.getFilePath().isBlank()) {
-                cloudinary.uploader().destroy(attachment.getFilePath(), ObjectUtils.emptyMap());
+                requireCloudinary().uploader().destroy(attachment.getFilePath(), ObjectUtils.emptyMap());
             }
         } catch (Exception e) {
             log.warn("Failed to delete from Cloudinary: {}", e.getMessage());
@@ -145,7 +146,7 @@ public class AttachmentService {
      */
     private TicketAttachment uploadToCloudinary(MultipartFile file, Ticket ticket) throws IOException {
         // Upload to Cloudinary
-        Map uploadResult = cloudinary.uploader().upload(
+        Map uploadResult = requireCloudinary().uploader().upload(
             file.getBytes(),
             ObjectUtils.asMap(
                 "folder", "smartcampus/tickets/" + ticket.getId(),
@@ -170,6 +171,12 @@ public class AttachmentService {
         attachment = attachmentRepository.save(attachment);
         log.info("File uploaded to Cloudinary: {} -> {}", file.getOriginalFilename(), publicId);
         return attachment;
+    }
+
+    private Cloudinary requireCloudinary() {
+        return cloudinary.orElseThrow(() -> new IllegalStateException(
+            "Cloudinary is not configured. Set CLOUDINARY_URL to enable attachment uploads."
+        ));
     }
 
     /**
