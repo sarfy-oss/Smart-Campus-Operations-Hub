@@ -1,5 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Alert,
+  Badge,
+  Form,
+  ListGroup,
   Spinner,
   Button,
 } from 'react-bootstrap';
@@ -408,6 +412,75 @@ const resourceDetailsStyles = String.raw`
   margin-bottom: 14px;
 }
 
+.rd-availability-card {
+  border: 1px solid #dce2ec;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f8fafc 0%, #f3f7fb 100%);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.rd-availability-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.rd-availability-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #44536a;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rd-availability-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.rd-availability-pill-available {
+  background: #d7f3df;
+  color: #237d3b;
+}
+
+.rd-availability-pill-unavailable {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.rd-availability-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.rd-availability-item {
+  background: #fff;
+  border: 1px solid #e1e7f1;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.rd-availability-item span {
+  display: block;
+  font-size: 12px;
+  color: #67758d;
+  margin-bottom: 4px;
+}
+
+.rd-availability-item strong {
+  font-size: 14px;
+  color: #223046;
+}
+
 .rd-description {
   margin: 0 0 16px 0;
   color: #46546c;
@@ -444,6 +517,140 @@ const resourceDetailsStyles = String.raw`
   grid-column: 1 / -1;
 }
 
+.rd-reviews-card {
+  margin-top: 18px;
+  background: #ffffff;
+  border: 1px solid #dce2ec;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(16, 24, 40, 0.08);
+}
+
+.rd-reviews-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e6ebf2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.rd-reviews-header h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #1d2433;
+}
+
+.rd-reviews-meta {
+  color: #66758e;
+  font-size: 14px;
+}
+
+.rd-reviews-body {
+  padding: 18px 20px 20px;
+}
+
+.rd-review-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.rd-review-summary .badge {
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+.rd-review-form {
+  background: #f7f9fc;
+  border: 1px solid #e1e7f1;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 18px;
+}
+
+.rd-review-form h4 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  color: #1d2433;
+}
+
+.rd-rating-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 14px;
+}
+
+.rd-rating-pill {
+  border: 1px solid #cfd7e6;
+  background: #fff;
+  color: #2a3342;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-weight: 700;
+}
+
+.rd-rating-pill-active {
+  background: #2f5cad;
+  color: #fff;
+  border-color: #2f5cad;
+}
+
+.rd-review-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.rd-review-list {
+  margin-top: 10px;
+}
+
+.rd-review-item {
+  border: 1px solid #e1e7f1;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+  background: #fff;
+}
+
+.rd-review-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.rd-review-user {
+  font-weight: 700;
+  color: #223046;
+}
+
+.rd-review-stars {
+  color: #f4b400;
+  font-weight: 800;
+}
+
+.rd-review-comment {
+  margin: 0;
+  color: #46546c;
+  line-height: 1.5;
+}
+
+.rd-review-date {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #7a879c;
+}
+
+.rd-review-empty {
+  color: #64748b;
+  padding: 8px 0 0;
+}
+
 @media (max-width: 1100px) {
   .rd-details-card {
     grid-template-columns: 1fr;
@@ -477,6 +684,14 @@ const ResourceDetails = () => {
   const [resource, setResource] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [reviews, setReviews] = useState([]);
+  const [reviewSummary, setReviewSummary] = useState({ totalReviews: 0, averageRating: 0 });
+  const [reviewLoading, setReviewLoading] = useState(true);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSuccess, setReviewSuccess] = useState('');
 
   // Load resource details on component mount
   useEffect(() => {
@@ -494,6 +709,71 @@ const ResourceDetails = () => {
 
     loadResource();
   }, [id]);
+
+  useEffect(() => {
+    const loadReviews = async () => {
+      try {
+        setReviewLoading(true);
+        const [reviewsResponse, summaryResponse] = await Promise.all([
+          resourceAPI.getResourceReviews(id),
+          resourceAPI.getResourceReviewSummary(id),
+        ]);
+
+        setReviews(reviewsResponse.data || []);
+        setReviewSummary(summaryResponse.data || { totalReviews: 0, averageRating: 0 });
+      } catch (error) {
+        setReviewError('Failed to load reviews');
+      } finally {
+        setReviewLoading(false);
+      }
+    };
+
+    if (id) {
+      loadReviews();
+    }
+  }, [id]);
+
+  const averageRatingLabel = useMemo(() => {
+    const value = Number(reviewSummary?.averageRating || 0);
+    return value > 0 ? value.toFixed(1) : '0.0';
+  }, [reviewSummary]);
+
+  const handleReviewSubmit = async (event) => {
+    event.preventDefault();
+    setReviewError('');
+    setReviewSuccess('');
+
+    const trimmedComment = reviewComment.trim();
+    if (!trimmedComment) {
+      setReviewError('Please enter a comment');
+      return;
+    }
+
+    try {
+      setReviewSubmitting(true);
+      await resourceAPI.submitResourceReview(id, {
+        rating: reviewRating,
+        comment: trimmedComment,
+      });
+
+      setReviewSuccess('Your review was submitted successfully');
+      setReviewComment('');
+      setReviewRating(5);
+
+      const [reviewsResponse, summaryResponse] = await Promise.all([
+        resourceAPI.getResourceReviews(id),
+        resourceAPI.getResourceReviewSummary(id),
+      ]);
+
+      setReviews(reviewsResponse.data || []);
+      setReviewSummary(summaryResponse.data || { totalReviews: 0, averageRating: 0 });
+    } catch (error) {
+      const message = error?.response?.data?.message || error?.response?.data || 'Failed to submit review';
+      setReviewError(message);
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
   const getResourceImageSrc = (item) => {
     const value = (item?.imageUrl || '').trim();
@@ -578,6 +858,38 @@ const ResourceDetails = () => {
                 </span>
               </div>
 
+              <div className="rd-availability-card">
+                <div className="rd-availability-head">
+                  <div className="rd-availability-title">Availability</div>
+                  <div className={`rd-availability-pill ${resource.status === 'AVAILABLE' ? 'rd-availability-pill-available' : 'rd-availability-pill-unavailable'}`}>
+                    {resource.status === 'AVAILABLE' ? 'Available Now' : 'Not Available'}
+                  </div>
+                </div>
+
+                <div className="rd-availability-grid">
+                  <div className="rd-availability-item">
+                    <span>Hours</span>
+                    <strong>
+                      {resource.availableFrom && resource.availableTo
+                        ? `${resource.availableFrom} - ${resource.availableTo}`
+                        : '-'}
+                    </strong>
+                  </div>
+                  <div className="rd-availability-item">
+                    <span>Days</span>
+                    <strong>
+                      {resource.availableDays && resource.availableDays.length > 0
+                        ? resource.availableDays.map((day) => getEnumDisplay('AvailableDay', day)).join(', ')
+                        : '-'}
+                    </strong>
+                  </div>
+                  <div className="rd-availability-item">
+                    <span>Status</span>
+                    <strong>{getEnumDisplay('ResourceStatus', resource.status)}</strong>
+                  </div>
+                </div>
+              </div>
+
               {resource.description && <p className="rd-description">{resource.description}</p>}
 
               <div className="rd-grid">
@@ -613,6 +925,84 @@ const ResourceDetails = () => {
                   <span>Last Updated</span>
                   <strong>{formatDate(resource.updatedAt)}</strong>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rd-reviews-card">
+            <div className="rd-reviews-header">
+              <h3>Reviews & Comments</h3>
+              <div className="rd-reviews-meta">
+                {reviewSummary.totalReviews} review{reviewSummary.totalReviews === 1 ? '' : 's'} • Average {averageRatingLabel}/5
+              </div>
+            </div>
+
+            <div className="rd-reviews-body">
+              {reviewError && <Alert variant="danger">{reviewError}</Alert>}
+              {reviewSuccess && <Alert variant="success">{reviewSuccess}</Alert>}
+
+              <div className="rd-review-summary">
+                <Badge bg="primary">Average Rating: {averageRatingLabel}/5</Badge>
+                <Badge bg="success">Total Reviews: {reviewSummary.totalReviews}</Badge>
+              </div>
+
+              <Form className="rd-review-form" onSubmit={handleReviewSubmit}>
+                <h4>Write a Review</h4>
+                <Form.Group className="mb-2">
+                  <Form.Label>Your Rating</Form.Label>
+                  <div className="rd-rating-row">
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={`rd-rating-pill ${reviewRating === value ? 'rd-rating-pill-active' : ''}`}
+                        onClick={() => setReviewRating(value)}
+                      >
+                        {'★'.repeat(value)}
+                      </button>
+                    ))}
+                  </div>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Comment</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={3}
+                    value={reviewComment}
+                    onChange={(event) => setReviewComment(event.target.value)}
+                    placeholder="Share your experience with this resource"
+                  />
+                </Form.Group>
+
+                <div className="rd-review-actions">
+                  <Button type="submit" disabled={reviewSubmitting}>
+                    {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
+                  </Button>
+                </div>
+              </Form>
+
+              <div className="rd-review-list">
+                {reviewLoading ? (
+                  <div className="rm-loading-wrap">
+                    <Spinner animation="border" role="status" />
+                  </div>
+                ) : reviews.length > 0 ? (
+                  reviews.map((review) => (
+                    <div key={review.id} className="rd-review-item">
+                      <div className="rd-review-top">
+                        <div className="rd-review-user">{review.username}</div>
+                        <div className="rd-review-stars">{'★'.repeat(review.rating || 0)}{'☆'.repeat(5 - (review.rating || 0))}</div>
+                      </div>
+                      <p className="rd-review-comment">{review.comment}</p>
+                      <div className="rd-review-date">
+                        {formatDate(review.createdAt)}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rd-review-empty">No reviews yet. Be the first to share your experience.</div>
+                )}
               </div>
             </div>
           </div>

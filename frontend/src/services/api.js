@@ -10,7 +10,7 @@ const AUTH_DEBUG_ENABLED =
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -190,6 +190,13 @@ export const resourceAPI = {
     apiClient.get('/resources/filter/type-capacity', { params: { type, capacity, page, size } }),
 
   getAvailableResources: () => apiClient.get('/resources/available/list'),
+
+  getResourceReviews: (resourceId) => apiClient.get(`/resources/${resourceId}/reviews`),
+
+  getResourceReviewSummary: (resourceId) => apiClient.get(`/resources/${resourceId}/reviews/summary`),
+
+  submitResourceReview: (resourceId, reviewData) =>
+    apiClient.post(`/resources/${resourceId}/reviews`, reviewData),
 };
 
 /**

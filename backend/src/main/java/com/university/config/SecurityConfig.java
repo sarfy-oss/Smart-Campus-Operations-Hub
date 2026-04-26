@@ -66,6 +66,8 @@ public class SecurityConfig {
 
                 // Resources: read for any authenticated user, write for admin only
                 .requestMatchers(HttpMethod.GET, "/resources/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/resources/*/reviews/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/resources/*/reviews").authenticated()
                 .requestMatchers(HttpMethod.POST, "/resources/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/resources/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/resources/**").hasRole("ADMIN")
