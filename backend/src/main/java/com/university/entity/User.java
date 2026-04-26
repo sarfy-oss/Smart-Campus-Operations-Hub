@@ -31,6 +31,9 @@ public class User {
     private String role = "USER";
 
     @Builder.Default
+    private String specialization = "GENERAL";
+
+    @Builder.Default
     private boolean enabled = true;
 
     @Builder.Default

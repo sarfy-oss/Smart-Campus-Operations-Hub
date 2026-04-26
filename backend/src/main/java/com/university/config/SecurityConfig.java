@@ -1,6 +1,7 @@
 package com.university.config;
 
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -20,7 +21,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
@@ -82,6 +83,43 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/bookings/**").hasAnyRole("USER", "ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/bookings/**").hasAnyRole("USER", "ADMIN")
 
+                // Tickets - more specific paths FIRST
+                // Get all tickets (admin only)
+                .requestMatchers(HttpMethod.GET, "/api/v1/tickets").hasRole("ADMIN")
+                // Get tickets by status filter (admin only)
+                .requestMatchers(HttpMethod.GET, "/api/v1/tickets/by-status").hasRole("ADMIN")
+                // Get my reported tickets (any authenticated user)
+                .requestMatchers(HttpMethod.GET, "/api/v1/tickets/my").authenticated()
+                // Get assigned tickets (technician)
+                .requestMatchers(HttpMethod.GET, "/api/v1/tickets/assigned").hasRole("TECHNICIAN")
+                // Get open tickets (any authenticated user)
+                .requestMatchers(HttpMethod.GET, "/api/v1/tickets/open").authenticated()
+                // Search tickets by keyword (any authenticated user)
+                .requestMatchers(HttpMethod.GET, "/api/v1/tickets/search").authenticated()
+                // Create ticket (any authenticated user)
+                .requestMatchers(HttpMethod.POST, "/api/v1/tickets").authenticated()
+                // Get single ticket (any authenticated user)
+                .requestMatchers(HttpMethod.GET, "/api/v1/tickets/*").authenticated()
+                // Update ticket status (admin or technician)
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/tickets/*/status").hasAnyRole("ADMIN", "TECHNICIAN")
+                // Assign technician (admin only)
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/tickets/*/assign").hasRole("ADMIN")
+                // Update assignment and status together (admin only)
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/tickets/*/workflow").hasRole("ADMIN")
+                // Delete ticket (admin only)
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/tickets/*").hasRole("ADMIN")
+
+                // Attachments (all authenticated)
+                .requestMatchers(HttpMethod.GET, "/api/v1/tickets/*/attachments").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/v1/tickets/*/attachments").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/tickets/*/attachments/*").authenticated()
+
+                // Comments (all authenticated)
+                .requestMatchers(HttpMethod.GET, "/api/v1/tickets/*/comments").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/v1/tickets/*/comments").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/v1/tickets/*/comments/*").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/tickets/*/comments/*").authenticated()
+
                 // All other requests require authentication
                 .anyRequest().authenticated()
             )
@@ -124,7 +162,7 @@ public class SecurityConfig {
                 "https://[::1]",
                 "https://[::1]:*"
         ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);

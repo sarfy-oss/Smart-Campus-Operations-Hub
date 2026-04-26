@@ -133,6 +133,18 @@ const NAV_ITEMS = [
   { key: 'my-bookings', type: 'link', label: 'My Bookings', shortLabel: 'MB', path: '/my-bookings', adminOnly: false },
   { key: 'issues', type: 'link', label: 'Issues', shortLabel: 'IS', path: '/issues', adminOnly: true },
   {
+    key: 'tickets-menu',
+    type: 'group',
+    label: 'Maintenance Tickets',
+    shortLabel: 'TK',
+    adminOnly: false,
+    children: [
+      { key: 'my-tickets', label: 'My Tickets', shortLabel: 'MT', path: '/tickets' },
+      { key: 'create-ticket', label: 'Create Ticket', shortLabel: 'CT', path: '/tickets/create' },
+      { key: 'admin-tickets', label: 'All Tickets (Admin)', shortLabel: 'AT', path: '/admin/tickets', adminOnly: true },
+    ],
+  },
+  {
     key: 'users-menu',
     type: 'group',
     label: 'Users',
@@ -152,10 +164,18 @@ const OperationsSidebar = ({ activeKey }) => {
   const [usersExpanded, setUsersExpanded] = useState(
     normalizedActiveKey === 'user-management' || normalizedActiveKey === 'user-role-management'
   );
+  const [ticketsExpanded, setTicketsExpanded] = useState(
+    normalizedActiveKey === 'my-tickets' || 
+    normalizedActiveKey === 'create-ticket' || 
+    normalizedActiveKey === 'admin-tickets'
+  );
 
   useEffect(() => {
     if (normalizedActiveKey === 'user-management' || normalizedActiveKey === 'user-role-management') {
       setUsersExpanded(true);
+    }
+    if (normalizedActiveKey === 'my-tickets' || normalizedActiveKey === 'create-ticket' || normalizedActiveKey === 'admin-tickets') {
+      setTicketsExpanded(true);
     }
   }, [normalizedActiveKey]);
 
@@ -177,6 +197,10 @@ const OperationsSidebar = ({ activeKey }) => {
     setUsersExpanded((current) => !current);
   };
 
+  const toggleTicketsMenu = () => {
+    setTicketsExpanded((current) => !current);
+  };
+
   return (
     <aside className="ops-sidebar">
       <style>{sidebarStyles}</style>
@@ -189,21 +213,23 @@ const OperationsSidebar = ({ activeKey }) => {
         {visibleItems.map((item) => {
           if (item.type === 'group') {
             const isGroupActive = item.children.some((child) => child.key === normalizedActiveKey);
+            const isExpanded = item.key === 'tickets-menu' ? ticketsExpanded : usersExpanded;
+            const toggleFn = item.key === 'tickets-menu' ? toggleTicketsMenu : toggleUsersMenu;
 
             return (
               <div key={item.key} className="ops-nav-group">
                 <button
                   type="button"
                   className={`ops-nav-item ${isGroupActive ? 'ops-nav-item-active' : ''}`}
-                  onClick={toggleUsersMenu}
-                  aria-expanded={usersExpanded}
+                  onClick={toggleFn}
+                  aria-expanded={isExpanded}
                 >
                   <span className="ops-nav-short">{item.shortLabel}</span>
                   <span className="ops-nav-label">{item.label}</span>
-                  <span className={`ops-nav-caret ${usersExpanded ? 'ops-nav-caret-expanded' : ''}`}>▾</span>
+                  <span className={`ops-nav-caret ${isExpanded ? 'ops-nav-caret-expanded' : ''}`}>▾</span>
                 </button>
 
-                {usersExpanded && (
+                {isExpanded && (
                   <div className="ops-subnav">
                     {item.children.map((child) => (
                       <button

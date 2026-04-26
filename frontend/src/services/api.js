@@ -275,4 +275,88 @@ export const bookingAPI = {
   deleteBooking: (id) => apiClient.delete(`/bookings/${id}`),
 };
 
+/**
+ * Ticket API Service - Module C: Maintenance & Incident Ticketing
+ */
+export const ticketAPI = {
+  // Create new ticket
+  createTicket: (data) => apiClient.post('/v1/tickets', data),
+
+  // Get all tickets (admin only)
+  getAllTickets: (page = 0, size = 10) =>
+    apiClient.get('/v1/tickets', { params: { page, size } }),
+
+  // Get my reported tickets
+  getMyTickets: (page = 0, size = 10) =>
+    apiClient.get('/v1/tickets/my', { params: { page, size } }),
+
+  // Get tickets assigned to me (technician)
+  getAssignedTickets: (page = 0, size = 10) =>
+    apiClient.get('/v1/tickets/assigned', { params: { page, size } }),
+
+  // Get tickets by status
+  getTicketsByStatus: (status, page = 0, size = 10) =>
+    apiClient.get('/v1/tickets/by-status', { params: { status, page, size } }),
+
+  // Get single ticket
+  getTicketById: (id) => apiClient.get(`/v1/tickets/${id}`),
+
+  // Update ticket status
+  updateTicketStatus: (id, data) => 
+    apiClient.put(`/v1/tickets/${id}/status`, data),
+
+  // Assign technician to ticket
+  assignTechnician: (id, data) => 
+    apiClient.put(`/v1/tickets/${id}/assign`, data),
+
+  // Resolve ticket with notes
+  resolveTicket: (id, data) => 
+    apiClient.put(`/v1/tickets/${id}/resolve`, data),
+
+  // Delete ticket
+  deleteTicket: (id) => apiClient.delete(`/v1/tickets/${id}`),
+
+  // Search tickets
+  searchTickets: (keyword, page = 0, size = 10) =>
+    apiClient.get('/v1/tickets/search', { params: { keyword, page, size } }),
+
+  // Get open tickets
+  getOpenTickets: (page = 0, size = 10) =>
+    apiClient.get('/v1/tickets/open', { params: { page, size } }),
+
+  // Attachment operations
+  uploadAttachment: (ticketId, formData) =>
+    apiClient.post(`/v1/tickets/${ticketId}/attachments`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+
+  getAttachments: (ticketId) =>
+    apiClient.get(`/v1/tickets/${ticketId}/attachments`),
+
+  deleteAttachment: (ticketId, attachmentId) =>
+    apiClient.delete(`/v1/tickets/${ticketId}/attachments/${attachmentId}`),
+
+  // Comment operations
+  addComment: (ticketId, data) =>
+    apiClient.post(`/v1/tickets/${ticketId}/comments`, data),
+
+  getComments: (ticketId) =>
+    apiClient.get(`/v1/tickets/${ticketId}/comments`),
+
+  updateComment: (ticketId, commentId, data) =>
+    apiClient.put(`/v1/tickets/${ticketId}/comments/${commentId}`, data),
+
+  deleteComment: (ticketId, commentId) =>
+    apiClient.delete(`/v1/tickets/${ticketId}/comments/${commentId}`),
+
+  getTechnicians: (specialization = '') =>
+    apiClient.get('/v1/tickets/technicians/list', {
+      params: specialization ? { specialization } : {},
+    }),
+
+  // Update assignment and status together
+  updateTicketWorkflow: (id, data) =>
+    apiClient.patch(`/v1/tickets/${id}/workflow`, data),
+};
+
 export default apiClient;
