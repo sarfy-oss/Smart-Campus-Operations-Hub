@@ -1,15 +1,18 @@
 package com.university.config;
 
-import com.university.entity.User;
-import com.university.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.time.LocalDateTime;
+
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
+import com.university.entity.User;
+import com.university.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
@@ -32,45 +35,39 @@ public class DataSeeder implements ApplicationRunner {
                     .createdAt(LocalDateTime.now())
                     .build();
 
-            userRepository.save(admin);
+            saveUserIfMissing(admin);
             log.warn("Default admin user created (username: admin, password: admin123). " +
-                 "Please change the default credentials immediately.");
+                "Please change the default credentials immediately.");
         }
 
-        if (userRepository.findByRoleAndSpecialization("TECHNICIAN", "ELECTRICIAN").isEmpty()) {
-            userRepository.save(User.builder()
-                .username("electrician1")
-                .email("electrician1@smartcampus.edu")
-                .password(passwordEncoder.encode("password123"))
-                .role("TECHNICIAN")
-                .specialization("ELECTRICIAN")
-                .enabled(true)
-                .createdAt(LocalDateTime.now())
-                .build());
+        seedTechnicianIfMissing("electrician1", "electrician1@smartcampus.edu", "ELECTRICIAN");
+        seedTechnicianIfMissing("technician1", "technician1@smartcampus.edu", "TECHNICIAN");
+        seedTechnicianIfMissing("itassistant1", "itassistant1@smartcampus.edu", "IT_ASSISTANT");
+    }
+
+    private void seedTechnicianIfMissing(String username, String email, String specialization) {
+        if (userRepository.existsByUsername(username) || userRepository.findByEmailIgnoreCase(email).isPresent()) {
+            return;
         }
 
-        if (userRepository.findByRoleAndSpecialization("TECHNICIAN", "TECHNICIAN").isEmpty()) {
-            userRepository.save(User.builder()
-                .username("technician1")
-                .email("technician1@smartcampus.edu")
-                .password(passwordEncoder.encode("password123"))
-                .role("TECHNICIAN")
-                .specialization("TECHNICIAN")
-                .enabled(true)
-                .createdAt(LocalDateTime.now())
-                .build());
-        }
+        User technician = User.builder()
+            .username(username)
+            .email(email)
+            .password(passwordEncoder.encode("password123"))
+            .role("TECHNICIAN")
+            .specialization(specialization)
+            .enabled(true)
+            .createdAt(LocalDateTime.now())
+            .build();
 
-        if (userRepository.findByRoleAndSpecialization("TECHNICIAN", "IT_ASSISTANT").isEmpty()) {
-            userRepository.save(User.builder()
-                .username("itassistant1")
-                .email("itassistant1@smartcampus.edu")
-                .password(passwordEncoder.encode("password123"))
-                .role("TECHNICIAN")
-                .specialization("IT_ASSISTANT")
-                .enabled(true)
-                .createdAt(LocalDateTime.now())
-                .build());
+        saveUserIfMissing(technician);
+    }
+
+    private void saveUserIfMissing(User user) {
+        try {
+            userRepository.save(user);
+        } catch (DuplicateKeyException ex) {
+            log.info("Skipping seed user '{}' because it already exists.", user.getUsername());
         }
     }
 }

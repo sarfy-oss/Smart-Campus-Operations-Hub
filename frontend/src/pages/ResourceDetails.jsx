@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Alert,
+  Badge,
   Spinner,
   Button,
+  Form,
 } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
 import OperationsSidebar from '../components/OperationsSidebar';
 import TopbarUserMenu from '../components/TopbarUserMenu';
 import { authAPI, resourceAPI } from '../services/api';
 import { formatDate, getEnumDisplay } from '../utils/helpers';
-import BrandLogo from '../components/BrandLogo';
 
 const resourceShellStyles = String.raw`
 .rm-page {
@@ -357,16 +359,17 @@ const resourceDetailsStyles = String.raw`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .rd-details-card {
   background: #ffffff;
   border: 1px solid #dce2ec;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   display: grid;
   grid-template-columns: 380px 1fr;
+  box-shadow: 0 1px 4px rgba(16, 24, 40, 0.08);
 }
 
 .rd-image-wrap {
@@ -393,7 +396,7 @@ const resourceDetailsStyles = String.raw`
 }
 
 .rd-content {
-  padding: 22px;
+  padding: 24px;
 }
 
 .rd-content h2 {
@@ -444,6 +447,135 @@ const resourceDetailsStyles = String.raw`
   grid-column: 1 / -1;
 }
 
+.rd-review-card {
+  margin-top: 18px;
+  background: #ffffff;
+  border: 1px solid #dce2ec;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 1px 4px rgba(16, 24, 40, 0.06);
+}
+
+.rd-review-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.rd-review-head h3 {
+  margin: 0;
+  font-size: 28px;
+  color: #1f2a3a;
+}
+
+.rd-review-head small {
+  color: #556581;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.rd-review-meta {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.rd-review-meta .badge {
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 999px;
+}
+
+.rd-review-form {
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  padding: 16px;
+  background: #f9fbff;
+  margin-bottom: 14px;
+}
+
+.rd-review-form h4 {
+  margin: 0 0 10px;
+  font-size: 23px;
+  color: #2a3550;
+}
+
+.rd-star-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.rd-star-btn {
+  border: 1px solid #cfd7e5;
+  background: #ffffff;
+  border-radius: 999px;
+  color: #29364f;
+  font-weight: 700;
+  padding: 6px 14px;
+}
+
+.rd-star-btn-active,
+.rd-star-btn:hover {
+  border-color: #2f5cad;
+  background: #2f5cad;
+  color: #ffffff;
+}
+
+.rd-review-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.rd-review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rd-review-item {
+  border: 1px solid #dde5f0;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 12px 14px;
+}
+
+.rd-review-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.rd-review-user {
+  font-size: 15px;
+  font-weight: 600;
+  color: #24324a;
+}
+
+.rd-review-date {
+  font-size: 12px;
+  color: #6a7891;
+}
+
+.rd-review-stars {
+  color: #1f5fb8;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.rd-review-comment {
+  margin: 0;
+  color: #3d4a62;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 1100px) {
   .rd-details-card {
     grid-template-columns: 1fr;
@@ -477,14 +609,61 @@ const ResourceDetails = () => {
   const [resource, setResource] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [reviewError, setReviewError] = useState('');
+  const [reviewsData, setReviewsData] = useState({
+    averageRating: 0,
+    totalReviews: 0,
+    canReview: true,
+    myReview: null,
+    reviews: [],
+  });
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  const syncReviewForm = (review) => {
+    if (review) {
+      setRating(review.rating || 0);
+      setComment(review.comment || '');
+      return;
+    }
+    setRating(0);
+    setComment('');
+  };
+
+  const loadReviews = async (resourceId) => {
+    try {
+      setReviewError('');
+      setReviewsLoading(true);
+      const response = await resourceAPI.getReviews(resourceId);
+      const payload = response.data || {};
+      const mappedData = {
+        averageRating: payload.averageRating || 0,
+        totalReviews: payload.totalReviews || 0,
+        canReview: payload.canReview !== false,
+        myReview: payload.myReview || null,
+        reviews: payload.reviews || [],
+      };
+      setReviewsData(mappedData);
+      syncReviewForm(mappedData.myReview);
+    } catch (error) {
+      setReviewError(error?.response?.data?.message || 'Failed to load reviews for this resource.');
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
 
   // Load resource details on component mount
   useEffect(() => {
     const loadResource = async () => {
       try {
         setLoadError('');
-        const response = await resourceAPI.getResourceById(id);
-        setResource(response.data);
+        const [resourceResponse] = await Promise.all([
+          resourceAPI.getResourceById(id),
+          loadReviews(id),
+        ]);
+        setResource(resourceResponse.data);
       } catch (error) {
         setLoadError('Failed to load resource details');
       } finally {
@@ -506,6 +685,64 @@ const ResourceDetails = () => {
     }
 
     return `data:image/jpeg;base64,${value}`;
+  };
+
+  const renderStars = (count) => {
+    const safeCount = Math.max(1, Math.min(5, Number(count || 0)));
+    return '★★★★★'.slice(0, safeCount);
+  };
+
+  const handleReviewSubmit = async (event) => {
+    event.preventDefault();
+
+    if (rating < 1 || rating > 5) {
+      setReviewError('Please select a rating between 1 and 5 stars.');
+      return;
+    }
+
+    if (!comment.trim()) {
+      setReviewError('Please add a short comment about your experience.');
+      return;
+    }
+
+    try {
+      setSubmittingReview(true);
+      setReviewError('');
+
+      const payload = {
+        rating,
+        comment: comment.trim(),
+      };
+
+      if (reviewsData.myReview) {
+        await resourceAPI.updateMyReview(id, payload);
+      } else {
+        await resourceAPI.createReview(id, payload);
+      }
+
+      await loadReviews(id);
+    } catch (error) {
+      setReviewError(error?.response?.data?.message || 'Failed to save your review.');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const handleDeleteMyReview = async () => {
+    if (!reviewsData.myReview) {
+      return;
+    }
+
+    try {
+      setSubmittingReview(true);
+      setReviewError('');
+      await resourceAPI.deleteMyReview(id);
+      await loadReviews(id);
+    } catch (error) {
+      setReviewError(error?.response?.data?.message || 'Failed to delete your review.');
+    } finally {
+      setSubmittingReview(false);
+    }
   };
 
   if (loading) {
@@ -533,31 +770,8 @@ const ResourceDetails = () => {
 
   return (
     <div className="rm-page">
-      <style>{resourceDetailsStyles}</style>
+      <style>{`${resourceShellStyles}\n${resourceDetailsStyles}`}</style>
       <OperationsSidebar activeKey="resources" />
-      <aside className="rm-sidebar" style={{ display: 'none' }}>
-        <div className="rm-brand">
-          <BrandLogo />
-        </div>
-
-        <nav className="rm-nav">
-          <button type="button" className="rm-nav-item">
-            <span>⌂</span> Dashboard
-          </button>
-          <button type="button" className="rm-nav-item rm-nav-item-active">
-            <span>▣</span> Resources
-          </button>
-          <button type="button" className="rm-nav-item">
-            <span>▤</span> Bookings
-          </button>
-          <button type="button" className="rm-nav-item">
-            <span>◌</span> Issues
-          </button>
-          <button type="button" className="rm-nav-item">
-            <span>◉</span> Users
-          </button>
-        </nav>
-      </aside>
 
       <section className="rm-main">
         <header className="rm-topbar">
@@ -639,6 +853,97 @@ const ResourceDetails = () => {
               </div>
             </div>
           </div>
+
+          <section className="rd-review-card">
+            <div className="rd-review-head">
+              <h3>Reviews and Comments</h3>
+              <small>
+                {reviewsData.totalReviews} reviews • Average {Number(reviewsData.averageRating || 0).toFixed(1)}/5
+              </small>
+            </div>
+
+            <div className="rd-review-meta">
+              <Badge bg="primary">Average Rating: {Number(reviewsData.averageRating || 0).toFixed(1)}/5</Badge>
+              <Badge bg="success">Total Reviews: {reviewsData.totalReviews}</Badge>
+            </div>
+
+            {reviewError && <Alert variant="warning">{reviewError}</Alert>}
+
+            <Form className="rd-review-form" onSubmit={handleReviewSubmit}>
+              <h4>{reviewsData.myReview ? 'Update Your Review' : 'Write a Review'}</h4>
+
+              <Form.Label>Your Rating</Form.Label>
+              <div className="rd-star-row">
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`rd-star-btn ${rating === value ? 'rd-star-btn-active' : ''}`}
+                    onClick={() => setRating(value)}
+                    disabled={submittingReview || (!reviewsData.myReview && !reviewsData.canReview)}
+                  >
+                    {'★'.repeat(value)}
+                  </button>
+                ))}
+              </div>
+
+              <Form.Group controlId="reviewComment">
+                <Form.Label>Comment</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={3}
+                  value={comment}
+                  onChange={(event) => setComment(event.target.value)}
+                  placeholder="Share your experience with this resource"
+                  disabled={submittingReview || (!reviewsData.myReview && !reviewsData.canReview)}
+                />
+              </Form.Group>
+
+              <div className="rd-review-actions">
+                <Button
+                  type="submit"
+                  className="rm-add-btn"
+                  disabled={submittingReview || (!reviewsData.myReview && !reviewsData.canReview)}
+                >
+                  {submittingReview ? 'Saving...' : reviewsData.myReview ? 'Update Review' : 'Submit Review'}
+                </Button>
+                {reviewsData.myReview && (
+                  <Button
+                    variant="outline-danger"
+                    onClick={handleDeleteMyReview}
+                    disabled={submittingReview}
+                  >
+                    Delete My Review
+                  </Button>
+                )}
+              </div>
+
+              {!reviewsData.myReview && !reviewsData.canReview && (
+                <Alert variant="info" className="mt-3 mb-0">
+                  You have already submitted a review for this resource.
+                </Alert>
+              )}
+            </Form>
+
+            {reviewsLoading ? (
+              <div className="rm-loading-wrap">Loading reviews...</div>
+            ) : reviewsData.reviews.length === 0 ? (
+              <div className="rm-empty">No reviews yet. Be the first to share your experience.</div>
+            ) : (
+              <div className="rd-review-list">
+                {reviewsData.reviews.map((review) => (
+                  <article className="rd-review-item" key={review.id}>
+                    <div className="rd-review-item-head">
+                      <span className="rd-review-user">{review.reviewerUsername || 'Anonymous'}</span>
+                      <span className="rd-review-date">{formatDate(review.createdAt)}</span>
+                    </div>
+                    <div className="rd-review-stars">{renderStars(review.rating)}</div>
+                    <p className="rd-review-comment">{review.comment}</p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
       </section>
     </div>

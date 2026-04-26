@@ -2,6 +2,7 @@ package com.university.config;
 
 import com.cloudinary.Cloudinary;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,13 +17,8 @@ public class CloudinaryConfig {
     private String cloudinaryUrl;
 
     @Bean
+    @ConditionalOnProperty(name = "cloudinary.url")
     public Cloudinary cloudinary() {
-        if (cloudinaryUrl == null || cloudinaryUrl.isBlank()) {
-            throw new IllegalArgumentException(
-                "CLOUDINARY_URL environment variable is not set. " +
-                "Please configure Cloudinary credentials."
-            );
-        }
         return new Cloudinary(cloudinaryUrl);
     }
 }

@@ -11,7 +11,8 @@
     "react-dom": "^18.2.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^6.20.0",
-    "react-toastify": "^10.0.0"
+    "react-toastify": "^10.0.0",
+    "recharts": "^3.8.1"
   },
   "scripts": {
     "predev": "kill-port 3000",
